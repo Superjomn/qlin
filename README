@@ -1,3 +1,8 @@
 qlin: 
     A small Chinese full-text search engine for LAN
+
+改进：
+    加入数据库的应用
+    模块化
+    将sort及Query彻底用C写出
     
