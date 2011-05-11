@@ -14,10 +14,6 @@ class HtmlParser():
     '''
     从html中提取出相关tag
     '''
-    def __init__(self):
-        '''
-        init
-        '''
         
     def init(self,html):
         self.d=pq(html)
@@ -43,9 +39,10 @@ class HtmlParser():
         urls=''
         for i in range(len(a)):
             aindex=a.eq(i)
-            print aindex.text()
+            #print aindex.text()
             text+=aindex.text()+' '
-            urls+=aindex.attr('href')+' '
+            if aindex.attr('href'):
+                urls+=aindex.attr('href')+' '
         return [text,urls]
             
     def get_url(self):

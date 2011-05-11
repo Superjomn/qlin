@@ -17,7 +17,8 @@ from parser.HtmlParser import Collector
 from reptile.Urltest import Urltest
 #sqlite数据库
 import sqlite3
-from reptile.Urltest import tem_home
+
+from parser.collector import collector
 
 
 class reptile(threading.Thread):  
@@ -34,21 +35,22 @@ class reptile(threading.Thread):
     #raw_url    : 存储每次下载页面中的未经过处理的url 
     #inque      : queue的继承 运行时绝对url参考  
     
-    def __init__(self, Name, runtime_queue, list, per_max_num):  
+    def __init__(self, Name, runtime_queue, list, per_max_num ,Flcok):  
         threading.Thread.__init__(self, name = Name )  
-        self.runtime_queue = queue  
-        self.result = result  
+        self.runtime_queue = runtime_queue  
+        #self.result = result  
         self.num = 0          
         self.maxnum = per_max_num
         self.list=list
+        self.Flcok=Flcok
         self.sqlite=sqlite3.connect('store/qlin.db')
         
         self.urltest=Urltest()
         self.htmlparser=Collector()
-        
+        self.collector=collector()
         #初始化home_list
         self.home_urls=[]
-        self.inqueue = queue
+        self.inqueue = Queue()
     
     def init_home_urls(self):
         '''
@@ -57,7 +59,12 @@ class reptile(threading.Thread):
         self.home_urls=self.sqlite.execute('select * from home_urls')
     
     def add_runtime_urls(self,docname,url):
-        return self.sqlite.execute('insert into dl_urls values(%s,%s)'%(docname,url))
+        self.Flcok.acquire()  
+        confile = open('store/urltest.txt', 'a+')  
+        confile.write( docname+' '+url+'\n')  
+        confile.close()  
+        self.Flcok.release()  
+        
         
     def run(self):  
         '''
@@ -72,16 +79,19 @@ class reptile(threading.Thread):
                 break
             #单次运行时url
             url = self.runtime_queue.get()          
+            print 'get a url from runtime',url
             
             if url == None:                 
                 break
+            
+            print 'get the url from runtime',url
             
             #parser = Basegeturls()         
             request = urllib2.Request(url) 
             request.add_header('Accept-encoding', 'gzip')
             #局部未处理url存储
             raw_url=[]
-            
+                
             try:            
                 page = opener.open(request,timeout=2) #设置超时为2s
                 
@@ -100,6 +110,7 @@ class reptile(threading.Thread):
                             continue
                         #begain to parse the page
                         self.htmlparser.init(data)
+                        self.collector.init(data)
                     except:  
                         print 'not a useful page'
                     #获取页面中url 加入到inqueue 和 Urlist中    
@@ -112,10 +123,11 @@ class reptile(threading.Thread):
                     #将已经下载html的url进行存储
                     docname=self.getName()+str(self.num) 
                     
-                    #将信息进行储存
-                    self.save_doc_content(docname)
-                    #将链接进行存储
+                    
+                    #将链接进行存储e
+                    print 'begain add_runtime_urls'
                     self.add_runtime_urls(docname, url)
+                    print 'succeed add runtime_urls'
                     
                 page.close()  
                 if self.num >= self.maxnum:
@@ -123,8 +135,11 @@ class reptile(threading.Thread):
             except:  
                 print 'end error'  
 
-            temHomeUrl=tem_home(url)
+            temHomeUrl=self.urltest.tem_home(url)
+            print 'begain trans_d'
             self.trans_d(temHomeUrl,raw_url)
+            #将信息进行储存
+            self.save_doc_content(docname,temHomeUrl)
             
             if self.num>self.maxnum:
                 for i in self.list:
@@ -138,28 +153,40 @@ class reptile(threading.Thread):
             包括 判断url是否为父地址的子页面
             将 相对url 转化为 相对url
         '''
+        print 'get tem_home',tem_home
+        print 'get rawurls',rawurls
         while True:
             if len(rawurls)>0:
                 url=rawurls.pop()
+                
             else:
                 return False
             
             newurl=self.urltest.abs_url_trans(tem_home, url)
             if newurl and self.list.find(newurl) == False:
-                self.inqueue.put(item) 
+                print 'input a url into runtime_queue',newurl
+                self.runtime_queue.put(newurl) 
          
-    def save_doc_content(self,docname):
+    def save_doc_content(self,docname,tem_home):
         '''
         将各个节点的内容存入数据库中
         '''
+        print 'begain save_doc_content'
+        
         title=self.htmlparser.get_nodes('title')
         h1=self.htmlparser.get_nodes('h1')
         h2=self.htmlparser.get_nodes('h2')
         h3=self.htmlparser.get_nodes('h3')
         b=self.htmlparser.get_nodes('b')
         a=self.htmlparser.get_as()
+        content=self.htmlparser.get_content()
         
-        text="insert into document values(%s,%s,%s,%s,%s,%s,%s,%s,%s)"%(docname,title,a[0],href[1],h1,h2,h3,b,content)
+        f=open('store/document/'+self.name+str(self.num),'w')
+        #在转成document的时候，需要对内部所有的url进行转化  至少应该转成绝对地址  以便后来投票的时候使用
+        f.write(self.collector.xml(tem_home).toxml())
+    
+        print 'begain to save content in file'
+        #text=docname+'@chunwei@'+title+'@chunwei@'+a[0]+'@chunwei@'+a[1]+'@chunwei@'+h1+'@chunwei@'+h2+'@chunwei@'+h3+'@chunwei@'+b+'@chunwei@'+content
 
     def __backFind(self,home,s):
         thome=home[::-1] 
@@ -184,39 +211,34 @@ class Reptile_run:
         thread_num    : 线程数目
         per_max_num   : 每一个线程下载的最大页面数目
         '''
-        self.thread_num=threadnum
+        self.thread_num=thread_num
         self.per_max_num=per_max_num
         #num=20
         #pnum=100
-        self.runtime_queue=QUeue()
+        self.runtime_queue=Queue()
         self.list=Urlist()
         
-        queue = Queue()  
-        key = Queue()  
-        inqueue = Queue()  
-        list = Urlist()  
+        self.Flock = threading.RLock()  
+        
         self.thlist = []  
     
     def run(self):
         '''
         运行主程序
         '''
+        startpage='http://www.cau.edu.cn'
+        
         for i in range(self.thread_num):  
-            th = reptile('s' + str(i), self.runtime_queue,self.list,self.per_max_num) 
+            th = reptile('s' + str(i), self.runtime_queue,self.list,self.per_max_num ,self.Flock)
             self.thlist.append(th)  
             
         for i in self.thlist:  
             i.start()  
-        queue.put(startpage)  
+        self.runtime_queue.put(startpage)  
         
-        for i in range(pnum):  
-            queue.put(inqueue.get())  
-            
-        for i in range(num+10):  
-            queue.put(None) 
-            
 if __name__=='__main__':
-    reptile=Reptile_run(20,200)
+    rep=Reptile_run(20,200)
+    rep.run()
     
         
 
