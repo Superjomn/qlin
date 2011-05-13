@@ -13,85 +13,14 @@
  * 所有版本的快速开序算法均会提供相似算法  但不会使用类或者统一接口
  * 每个库的sort代码均会单独拷贝 并进行相关修改
  */
-
+#include "stack.h"
 /*
  * 记录的数据结构
  * 通过指定 id 索引的对应关系
  * 最终将结果输出 通过索引将原结果中的记录按照次序输出
  * （减少排序中 大块数据移动的时间）
  */
-/*--------------------------------------------------
- * -------------------------------------------------
- * ---------栈--数据结构------------------------------
- */
-struct st{
-	int top;		//栈顶
-    int *node;      //记录首地址  采用动态分配内存方法
-    int length;		//当前分配的内存大小
-}st;
 
-
-#define STSIZE 1000
-#define st_dtype int
-#define STPERADD 20
-
-/*
- * st_init:
- * 	栈初始化  采用动态分配内存的方法
- * 	以对大型数据作准备
- */
-short st_init()
-{
-    st.top=-1;
-    st.node=(int *)malloc( STSIZE*sizeof(int) ) ;
-    if (st.node)
-        return 1;
-    else
-        return 0;
-}
-/*
- * 销毁栈内存
- */
-void st_destroy()
-{
-    free(st.node);
-}
-/*
- * st_append:
- * 	向栈中添加一个数据
- * 	如果内存不够 则重新分配内存
- */
-short st_append(int x)
-{
-    if (st.top>=st.length-1)
-    {
-    	//重新分配内存
-    	int *base = (int *)realloc( st.node, sizeof(int)*(st.length+STPERADD) );
-    	//分配成功
-    	if (base)
-    	{
-    		st.node=base;
-    		st.length+=STPERADD;
-    		return 1;
-    	}
-    	return 0;
-    } 
-	st.node[++st.top]=x;
-}
-/*
- * st_top:
- * 	从栈中取出一个数据
- */
-int st_pop()
-{
-	if (st.top>=0)
-	{
-		return st.node[st.top--];
-	}else{
-        printf("the stack is empty!\n");
-        return 0;
-    }
-}
 /*
  * ---------------------------------------------------------
  * ---------------程序主部分---------------------------------
@@ -158,7 +87,7 @@ double gv(dType x)
 }
 int partition(dType a[],int low,int high)
 {
-	printf("begain partition\n");
+	//printf("begain partition\n");
 	//gv=self.gvalue
 	//dType v=a[low]
 	dType v;
@@ -166,7 +95,7 @@ int partition(dType a[],int low,int high)
 	//while low<high:
 	while(low<high)
 	{
-		printf("began partition while 1\n");
+		//printf("began partition while 1\n");
 		while (low<high && gv( a[high] ) >= gv( v ))
 			high--;
 		//a[low]=a[high]
@@ -177,7 +106,7 @@ int partition(dType a[],int low,int high)
 			//a[high]=a[low]
 		eq(&a[high],a[low]);
 	}
-	printf("out of partition while 1\n");
+	//printf("out of partition while 1\n");
 
 	//a[low]=v
 	eq(&a[low],v);
@@ -186,11 +115,11 @@ int partition(dType a[],int low,int high)
 
 void quicksort(dType a[],int p,int q)
 {
-	printf("begain quicksort\n");
+	//printf("begain quicksort\n");
 	int index=1;
 	while(1)
 	{
-		printf("begain while top\n");
+		//printf("begain while top\n");
 		int j=0;
 
 		while(p<q)
@@ -199,7 +128,7 @@ void quicksort(dType a[],int p,int q)
 
 			if ( (j-p)<(q-j) )
 			{
-				printf("begain while\n");
+				//printf("begain while\n");
 				st_append(j+1);
 				st_append(q);
 				q=j-1;
@@ -224,7 +153,7 @@ void quicksort(dType a[],int p,int q)
 void show(dType a[])
 {
     int i=0;
-    printf("begain to show the list\n");
+    //printf("begain to show the list\n");
     while(i<9)
     {
         printf("%d %lf \n",a[i].id,a[i].hash);
