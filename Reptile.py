@@ -182,8 +182,10 @@ class reptile(threading.Thread):
         content=self.htmlparser.get_content()
         
         f=open('store/document/'+self.name+str(self.num),'w')
-        #在转成document的时候，需要对内部所有的url进行转化  至少应该转成绝对地址  以便后来投票的时候使用
-        f.write(self.collector.xml(tem_home).toxml())
+        try:
+            f.write(self.collector.xml(tem_home).toxml())
+        except:
+            print 'write the data wrong'
     
         print 'begain to save content in file'
         #text=docname+'@chunwei@'+title+'@chunwei@'+a[0]+'@chunwei@'+a[1]+'@chunwei@'+h1+'@chunwei@'+h2+'@chunwei@'+h3+'@chunwei@'+b+'@chunwei@'+content
@@ -237,7 +239,7 @@ class Reptile_run:
         self.runtime_queue.put(startpage)  
         
 if __name__=='__main__':
-    rep=Reptile_run(20,200)
+    rep=Reptile_run(20,2000)
     rep.run()
     
         

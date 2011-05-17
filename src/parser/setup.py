@@ -4,5 +4,5 @@ from Cython.Distutils import build_ext
 
 setup(
 cmdclass = {'build_ext': build_ext},
-ext_modules = [Extension("sorter", ["sorter.pyx"])]
+ext_modules = [Extension("wordlist", ["wordlist.pyx"])]
 )

@@ -20,6 +20,9 @@ class Parser:
     
     '''
     def __init__(self,htmlph,xmlph,wsplitph,wbpath):
+        '''
+        初始化各项目录
+        '''
         self.ict=Ictclas('ICTCLAS50/') 
         self.wordbar=wordlist()#wordBar
         self.spword='@chunwei@' 
@@ -29,46 +32,17 @@ class Parser:
         self.wsplitph=wsplitph
         self.wbpath=wbpath
 
-    def transDoc(self):
-        '转化为document文档'
-        htmlli=os.listdir(self.htmlph)
-        num=0
-        for hp in htmlli:
-            print hp
-            f=open(self.htmlph+'/'+hp)
-            c=f.read()
-            
-            res=chardet.detect(c)
-            print res
-            coding=res['encoding']
-            #print 'the former coding',coding
-            if coding!='utf-8':
-                try:
-                    c=c.decode(coding)
-                except:
-                    print 'something wrong'
-            collec=collector(c)
-            f.close()
-            f=open(self.xmlph+'/'+hp,'w')
-            try:
-                f.write(collec.xml(hp).toxml())#д�뵽���ļ���
-            except:
-                print 'can not trans xml'
-            f.close()
-            num+=1
-
-
     def splitWord(self):
-        '转化为 wordsplit形式'
+        '''
+        转化为 wordsplit形式
+        格式为 <dom str> @chunwei@ <dim str>
+        直接使用了字符串进行分割
+        '''
         spword='@chunwei@'
         docli=os.listdir(self.xmlph+'/')
         num=0
         for dp in docli:
             print dp
-
-            #if num>1:
-            #    break
-            #num+=1
 
             f=open(self.xmlph+'/'+dp)
             c=f.read()
@@ -81,7 +55,7 @@ class Parser:
             title=root('title').eq(0)
             bb+=self.ict.split( title.attr('text').encode('utf-8'))+' '
             bb+=spword
-            #b�Ĵ���
+
             b=root('b item')
             length=len(b)
             for i in range(length):
@@ -141,8 +115,6 @@ class Parser:
         '词库初始化'
         li=os.listdir(self.wsplitph)
         for xml in li:
-            print xml
-            
             f=open(self.wsplitph+'/'+xml)
             c=f.read()
             f.close()   
