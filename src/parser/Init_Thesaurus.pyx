@@ -1,71 +1,120 @@
+from libc.stdio cimport fopen,fclose,fwrite,FILE,fread
+from libc.stdlib cimport malloc,free
+
+DEF STEP=20
+
+
+cdef struct HI: 
+    int left    #左侧范围
+    int right   #右侧范围
+
+
+###################### init_hashIndex  from  Thesaurus.pyx  #################
+
+cdef class init_hashIndex:
+    '''
+    init he hash index
+    '''
+    #define the hash index 
+
+    cdef HI hi[STEP]
+
+    def __cinit__(self,char *ph):
+        '''
+        init
+        '''
+        cdef FILE *fp=<FILE *>fopen(ph,"rb")
+        fread(self.hi,sizeof(HI),STEP,fp)
+        fclose(fp)
+
+    def pos(self,double hashvalue):
+        '''
+        pos the word by hashvalue 
+        if the word is beyond hash return -1
+        else return the pos
+        
+        '''
+        cdef int cur=-1
+        
+        if hashvalue>self.hi[0].left:
+            cur+=1
+        else:
+            return cur
+
+        while hashvalue > self.hi[cur].left:
+
+            cur+=1
+
+        return cur
+
+####################################################################
+
+
 #定义 hashIndex 结构
 cdef struct HI: #hashIndex 结构
     int left    #左侧范围
     int right   #右侧范围
     
 
-cdef class Init_Thesaurus:
+cdef class Init_thesaurus:
     '''
-    词库设计:
-        本库旨在设计一个与Query库相通的高效词库查询系统
-        采用Cython和C优化  甚至可以放弃类结构
-        加入一级hash表加速
-
-    解释：
-        一级hash表
-            所在词在词库中的大概位置范围
-            为了安全地分开正数和负数 将参考表分为两个表
-            一正 一负
+    初始化词库
     '''
+    #使用动态分配内存方式  
+    #分配词库内存空间
+    cdef char **word_list
+    #一级hash 参考表 初始化
+    cdef init_hashIndex hashIndex
+    #词库长度 由 delloc 调用
+    cdef int length
 
-    #词库词量
-    cdef word_num=10000
-    #一级hash索引范围数目
-    cdef index_pos_num=20   #正数 index 参考数
-    cdef index_neg_num=20   #负数 index 参考数
+    def __cinit__(self,char *ph):
+        '''
+        传入词库地址
+        初始化词库
+        '''
+        #一级hash 参考表 初始化
+        self.hashIndex = init_hashIndex("sore/hashIndex.b")
 
-    #定义词库数组
-    cdef char* wlist[word_num]
-    #定义hash索引范围参考数组
-    cdef HI hash_index[index_num]
-    
-    def __cinit__(self,ph):
-        '''
-        提供公共文件地址
-        '''
-        f=open(ph)
-        #是 split 还是 readlines 需要由词库存储格式而定
         cdef:
             int i
-            char *l
+            int l
 
-        for i,l in enumerate(f.readlines()):
-            #可以考虑将wordbar内置为类属性
-            self.wlist[i]=i
+        f=open(ph)
+        words=f.read()
         f.close()
 
-    cdef void initHashIndex(self):
-        '''
-        初始化 一级hash范围参考表
-        '''
-        #需要同时初始化两个表
-        #一正  一负
-        #*****************
-
-    cdef HI hashIndex(self,double hv):
-        '''
-        输入hash 返回一级hash表中对应在词库中index范围
-        ---由find()调用
-        '''
-        #????取得词库中最小hash值 词库生成的时候储存于sqlite中
-        cdef hash_width=10000
-        if hv>0:
-            return self.pos_index[int( hv/hash_width )]
-
+        #词的数量 
+        self.length=len(words)
+        cdef char  **li=<char **>malloc( sizeof(char *) * self.length )
+        if li!=NULL:
+            print 'the li is successful'
+            self.word_list=li
         else:
-            return self.neg_index[int( -hv/hash_width )]
+            print 'the li is failed'
 
-        #****************
+        #开始对每个词分配内存 
+        #并且分配内存
+        for i,w in enumerate(words):
+            self.word_list[i]=<char *>malloc( sizeof(char) * len(w) )
+            self.word_list[i]=w
+
+    def __dealloc__(self):
+        '''
+        释放c内存空间
+        '''
+        print 'begin to delete all the C spaces'
+
+        cdef char* point
+        cdef int i=0
+
+        #释放每一个词的空间
+        for i in range(self.length):
+            free(self.word_list[i])
+
+        #释放整个词库 pointer 的空间
+        free(self.word_list)
+
 
     cdef double v(self,data):
         '''
@@ -90,22 +139,24 @@ cdef class Init_Thesaurus:
             int fir
             int mid
             int end
+            int pos
             HI cur  #范围
 
-        l=len(self.wlist)
         dv=self.v(data)     #传入词的hash
+
+        pos=self.hashIndex( dv )
+
+        if pos!=-1 and pos<STEP:
+            cur=self.hashIndex.hi[pos]
+
+        else:
+            print "the word is not in wordbar or pos wrong"
+            return False
+
         #取得 hash 的一级推荐范围
-        cur=self.hashIndex(dv)
-        #fir=0
-        #end=l-1
-        #mid=0
-        #赋值范围
         fir=cur.left
         end=cur.right
         mid=fir
-
-        if l == 0:
-            return 0#空
 
         while fir<end:
             mid=(fir+ end)/2
@@ -131,5 +182,15 @@ cdef class Init_Thesaurus:
         else:
             #print '1return fir,mid,end',fir,mid,end
             return mid#需要测试
+
+
+
+        
+
+
+
+
+
+
 
 

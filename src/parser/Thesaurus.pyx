@@ -1,5 +1,5 @@
 '''
-Created on May 19, 2011
+Created on May 19, STEP11
 
 @author: chunwei
 '''
@@ -14,6 +14,7 @@ Created on May 19, 2011
 
 from libc.stdio cimport fopen,fclose,fwrite,FILE,fread
 
+DEF STEP=20
 
 cdef struct HI: 
     int left    #左侧范围
@@ -114,6 +115,49 @@ cdef class Create_hashIndex:
         else:
             #print '1return fir,mid,end',fir,mid,end
             return mid#需要测试
+
+
+
+
+
+cdef class init_hashIndex:
+    '''
+    init he hash index
+    '''
+    #define the hash index 
+
+    cdef HI hi[STEP]
+
+    def __cinit__(self,char *ph):
+        '''
+        init
+        '''
+        cdef FILE *fp=<FILE *>fopen(ph,"rb")
+        fread(self.hi,sizeof(HI),STEP,fp)
+        fclose(fp)
+
+    def pos(self,double hashvalue):
+        '''
+        pos the word by hashvalue 
+        if the word is beyond hash return -1
+        else return the pos
+        
+        '''
+        cdef int cur=-1
+        
+        if hashvalue>self.hi[0].left:
+            cur+=1
+        else:
+            return cur
+
+        while hashvalue > self.hi[cur].left:
+
+            cur+=1
+
+        return cur
+
+        
+
 
 
 
@@ -288,18 +332,18 @@ cdef class Create_Thesaurus:
         需要通过动态分配内存的方式？
         '''
         print 'begin create_hash'
-        #分为20个hashindex表
+        #分为STEP个hashindex表
         cdef: 
-            HI hashIndex[20]
+            HI hashIndex[STEP]
             int i
             double minidx
             long step   #步长 
             int cur_step
 
-        step=long( (self.right-self.left)/20 )
+        step=long( (self.right-self.left)/STEP )
         #初始化 Create_hashIndex
         #产生 hash参考表
-        cdef Create_hashIndex cHashIdx=Create_hashIndex(self.left,self.right,self.li,20)
+        cdef Create_hashIndex cHashIdx=Create_hashIndex(self.left,self.right,self.li,STEP)
         #定义初始 index为1
         cur_step=0
 
@@ -307,7 +351,7 @@ cdef class Create_Thesaurus:
 
         minidx=self.left
 
-        for i in range(20):
+        for i in range(STEP):
             #寻找边界
             minidx+=step*i
             hashIndex[i].left=cur_step+1
@@ -323,7 +367,7 @@ cdef class Create_Thesaurus:
         '''
         print 'begin to save hash'
         cdef FILE *fp=<FILE *>fopen(ph,"wb")
-        fwrite(hi,sizeof(HI),20,fp)
+        fwrite(hi,sizeof(HI),STEP,fp)
         fclose(fp)
         print 'succeed save hash'
 
