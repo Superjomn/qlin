@@ -367,6 +367,17 @@ cdef class sorter:
 cdef class Indexer:
     '''
     索引器
+    最终将要产生两类hit
+    一类为 docID 排序
+    一类为 wID 排序
+
+    在 docID 排序的时候 
+    在扫描 wID 同时 存储 docID
+
+    docID 需要 根据 文件个数 确定 每快存储长度
+    最终需要根据 wID进行排序
+    wordID 需要根据 wordID 进行排序
+    ???????????两者均需要排序????????????
     '''
     #文件目录地址
     cdef char *ph
@@ -462,6 +473,7 @@ cdef class Indexer:
     cdef void add_save(self,int list_idx):
         '''
         将相关内容添加到文件中 
+        默认 便是 在 wordID 范围内乱序排列
         '''
         name=self.toph+str(list_idx)
         cdef char *fh=name
