@@ -1,23 +1,16 @@
 import os
 
-from libc.stdlib cimport malloc,free
+from libc.stdlib cimport malloc,free,realloc
 
 from libc.stdio cimport fopen, fwrite, fread,fclose,FILE
 
-DEF List_init_size = 100  #定义List初始化长度
-DEF List_max_size = 1000  #定义List最长长度
+#from parser.Init_Thesaurus import Init_thesaurus
 
-DEF List_num = 20         #划分 块 数目
+#cimport parser.Init_Thesaurus 
 
 
-#定义 Hit 结构
-cdef struct Hit:
-    int wordID
-    int docID
-    short score
-    int pos
+############ Init Thesaurus #########################################
 
-#################### Init_Thesaurus from parser/Thesaurus ##################
 DEF STEP=20
 
 
@@ -26,7 +19,7 @@ cdef struct HI:
     int right   #右侧范围
 
 
-      ############## init_hashIndex  from  Thesaurus.pyx  #########
+   ############## init_hashIndex  from  Thesaurus.pyx  ##############
 
 cdef class init_hashIndex:
     '''
@@ -64,7 +57,7 @@ cdef class init_hashIndex:
 
         return cur
 
-           #################################################
+      ###########################################################
 
 
 #定义 hashIndex 结构
@@ -201,10 +194,31 @@ cdef class Init_thesaurus:
             return mid#需要测试
 
 
-#######################  end Init_thusurus ##################################
+
+ 
+
+########################## end Thesaurus #########################################
 
 
 
+DEF List_init_size = 100  #定义List初始化长度
+DEF List_max_size = 1000  #定义List最长长度
+DEF List_add = 100
+DEF List_num = 20         #划分 块 数目
+
+
+#定义 Hit 结构
+cdef struct Hit:
+    int wordID
+    int docID
+    short score
+    int pos
+
+#单个list结构
+cdef struct List:
+    Hit *start
+    int length
+    int top
 
 
 cdef class Hit_lists:
@@ -215,48 +229,55 @@ cdef class Hit_lists:
     cdef:
         int length
         int top
-        Hit *hits
+        List hit_list[List_num]
 
     def __cinit__(self):
         '''
         初始化数据空间
         '''
-        self.hits=<Hit *>malloc( sizeof(Hit) * List_init_size )
-        self.top=-1 #-1代表空
-        self.length=List_init_size
-        
-        if hits != NULL:
-            print '>>init list ok!'
+        cdef:
+            int i
+        #初始化每个list节点
+        for i in range(List_num):
+            self.hit_list[i].start=<Hit *>malloc( sizeof(Hit) * List_init_size )
+            self.hit_list[i].length=List_init_size
+            self.hit_list[i].top=-1
 
-    cdef void eq(self,idx,wordID,docID,score,pos):
+            if self.hit_list[i].start!= NULL:
+                print '>>init list ok!'
+
+    cdef void eq(self,int hit_id,int idx,int wordID,int docID,short score,int pos):
         '''
         赋值处理
         '''
-        self.hits[idx].wordID=wordID
-        self.hits[idx].docID=docID
-        self.hits[idx].score=score
-        self.hits[idx].pos=pos
+        self.hits[hit_id].start[idx].wordID=wordID
+        self.hits[hit_id].start[idx].docID=docID
+        self.hits[hit_id].start[idx].score=score
+        self.hits[hit_id].start[idx].pos=pos
 
-    cdef bint append(self,wordID,docID,score,pos):
+    cdef bint append(self,int hit_id,int wordID,int docID,short score,int pos):
         '''
         向list中添加数据
         如果list溢出 则返回False
         添加成功 返回True
         '''
-        top+=1
-        eq(self,top,wordID,docID,score,pos)
+        self.hit_list[hit_id].top+=1
+        self.eq( hit_id, self.hit_list[hit_id].top ,wordID,docID,score,pos)
 
-        if (self.top == length-2):
+        if (self.hit_list[hit_id].top == self.hit_list[hit_id].length-2):
             #如果 分配长度快到最大长度 则返回false
             #如果 lenth还有空间 继续分配空间
-            if (self.length<List_max_size):
+            if (self.hit_list[hit_id].length<List_max_size):
                 #添加新的空间
-                self.hits=<Hit *>realloc(self.hits,sizeof(Hit)*
-                        (self.length+List_init_size))
+                #再添加 hit_add 个空间
+                self.hit_list[hit_id].start=<Hit *>realloc( self.hit_list[hit_id].start , sizeof(Hit)*
+                        (self.hit_list[hit_id].length+List_add))
+                self.hit_list[hit_id].length += List_add
                 return True
 
             else:
                 #已经达到最大限度
+                #应该将其添加入文件中
                 return False
 
         else:
@@ -264,14 +285,20 @@ cdef class Hit_lists:
             #正常情况
             return True
 
-    cdef void empty(self):
+    cdef void empty(self,int hit_id):
         '''
         将List清空
         释放空间
         再重新分配基本空间
         '''
-        free(self.hits)
-        self.hits=<Hit *>malloc( sizeof(Hit) * List_init_size )
+        free(self.hit_list[hit_id].start)
+        #重新分配内存
+        self.hit_list[hit_id].start = <Hit *>malloc( sizeof(Hit) * List_init_size )
+        self.hit_list[hit_id].length=List_init_size
+        self.hit_list[hit_id].top=-1
+
+
+
 
 
 cdef class sorter:
@@ -279,20 +306,21 @@ cdef class sorter:
     最优法排序
     '''
     #hitlist 的私有对象
-    cdef Hit *dali 
+    cdef Hit_lists dali 
 
-    def __cinit__(self,Hit *datalist):
+    def __cinit__(self):
         '''
         初始化 
         将hit队列传递为self
         '''
-        self.dali=datalist
+        #初始化 Hit_list
+        self.dali=Hit_lists()
 
     cdef double gvalue(self,data):
         '''
         取得值
         '''
-        return 
+        return 1
 
     def quicksort(self,int p,int q):
 
@@ -342,22 +370,31 @@ cdef class Indexer:
     '''
     #文件目录地址
     cdef char *ph
-    cdef Hit_lists hit_list[List_num]
+    cdef char *toph
+    cdef Hit_lists hit_list
+    #词库
+    cdef Init_thesaurus thes
 
-    def __cinit__(self,ph):
+    def __cinit__(self,char *wph,char *toph):
         '''
         init
         ph: wordsplit文件目录地址
         '''
-        self.ph=ph
-        self.hit_list=[]
+        self.ph=wph
+        self.toph=toph
+        #初始化 Hit_list
+        self.hit_list = Hit_lists()
+        #词库
+        self.thes = Init_thesaurus(wph)
 
-    cdef loc_list(self):
+
+    cdef int loc_list(self,hashvalue):
         '''
         传入一个word
         定位 其 应该存在的 list 
         可以继承 词库 
         '''
+        return self.thes.hashIndex.pos(hash(hashvalue))
         #???????????????????????????????
 
     def run(self):
@@ -366,46 +403,70 @@ cdef class Indexer:
         '''
         cdef:
             int list_idx    #定位 list 的号码
+            object li
+            object c
+            #词库长度
+            int length
+            #相对pos
+            int abspos
+
+        cdef:
+            int pos
+            #wordid 
+            long wid
+            #对应于 list 中 的 list_id
 
         li=os.listdir(self.ph)
         length=len(li)
 
         for doc in li:
-            f=open(self.ph+'/'+fl)
+            f=open(self.ph+'/'+doc)
             c=f.read()
             f.close()
 
             tags=c.split('@chunwei@')
             abspos=0
+
             for scoid,tag in enumerate(tags):
                 #对每个标签进行处理
                 words=tag.split()
+
+                
                 for pos,word in enumerate(words):
-                    wid=findWI(word)
-                    
+                    #开始扫面每一个tag ?????????????????????
+                    wid=self.thes.find(word)
                     #定位 list号码
                     list_idx=self.loc_list(word)
 
-                    if wid:
-                        if self.hit_list[list_idx].add(word):
+                    #若 wid 为 0 表示 词汇不存在
+                    if wid != 0:
+                        print 'the word does not exist'
+                        print 'that is strange'
+                        #此处 为了将不同tag内的hit的pos完全分给开
+                        #采用 自动添加 20 作为间隔
+                        if self.hit_list[list_idx].append(list_idx,wid,doc,scoid,pos+abspos + 20 ):
                             continue
+
                         else:
                             #将 list_idx 对应的list写入到文件
-                            self.add(list_idx)
+                            self.add_save(list_idx)
                             #将相应list清空
-                            self.hit_list[list_idx].empty()
+                            self.hit_list.empty(list_idx)
 
     cdef sort(self):
         '''
         将结果逐个进行排序
         '''
+        pass
 
-    cdef int add(self,int list_idx):
+    cdef void add_save(self,int list_idx):
         '''
         将相关内容添加到文件中 
         '''
-        cdef FILE *fp=<FILE *>fopen(self.toph,"wb")
+        name=self.toph+str(list_idx)
+        cdef char *fh=name
+        cdef FILE *fp=<FILE *>fopen(fh,"ab")
         #此处 size 需要???????????????????????????????????????
-        fwrite(hi,sizeof(Hit),List_max_size,fp)
+        fwrite( self.hit_list.hit_list[list_idx].start, sizeof(Hit) ,
+        self.hit_list.hit_list[list_idx].top+1 , fp)
         fclose(fp)
-
