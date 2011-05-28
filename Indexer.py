@@ -2,6 +2,7 @@
 import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
+
 import os
 import chardet
 #载入词库

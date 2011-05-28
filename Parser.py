@@ -12,6 +12,8 @@ from parser.collector import collector
 from ICTCLAS50.Ictclas import Ictclas
 import os
        
+
+
 class Parser:
     '''
     解析库

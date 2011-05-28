@@ -16,7 +16,7 @@ from parser.HtmlParser import Collector
 #对url的处理库
 from reptile.Urltest import Urltest
 #sqlite数据库
-import sqlite3
+#import sqlite3
 
 from parser.collector import collector
 
@@ -43,7 +43,7 @@ class reptile(threading.Thread):
         self.maxnum = per_max_num
         self.list=list
         self.Flcok=Flcok
-        self.sqlite=sqlite3.connect('store/qlin.db')
+        #self.sqlite=sqlite3.connect('store/qlin.db')
         
         self.urltest=Urltest()
         self.htmlparser=Collector()
@@ -56,7 +56,8 @@ class reptile(threading.Thread):
         '''
         得到父地址 作为接口可以被重载
         '''
-        self.home_urls=self.sqlite.execute('select * from home_urls')
+        #self.home_urls=self.sqlite.execute('select * from home_urls')
+        self.home_url="http://www.cau.edu.cn"
     
     def add_runtime_urls(self,docname,url):
         self.Flcok.acquire()  
