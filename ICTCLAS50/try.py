@@ -1,10 +1,13 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python
 import sys
 import chardet
 reload(sys)
 sys.setdefaultencoding('utf-8')
+
 import ictclas
 #ictclas.import_dict('./userdict.txt',eCodeType.UTF8)
+
 class Ictclas:
     def __init__(self,basepath='./'):
         ictclas.ict_init(basepath)
@@ -22,4 +25,4 @@ class Ictclas:
 
 if __name__=='__main__':
     c=Ictclas()
-    print c.wsplit('hello world,i am chunwei')
+    print c.wsplit('hello world,i am chunwei 中国农业大学欢迎您！')

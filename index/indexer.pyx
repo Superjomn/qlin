@@ -22,6 +22,7 @@ cdef struct HI:
    ############## init_hashIndex  from  Thesaurus.pyx  ##############
 
 cdef class init_hashIndex:
+
     '''
     init he hash index
     '''
@@ -30,6 +31,7 @@ cdef class init_hashIndex:
     cdef HI hi[STEP]
 
     def __cinit__(self,char *ph):
+
         '''
         init
         '''
@@ -38,6 +40,7 @@ cdef class init_hashIndex:
         fclose(fp)
 
     def pos(self,double hashvalue):
+
         '''
         pos the word by hashvalue 
         if the word is beyond hash return -1
@@ -67,6 +70,7 @@ cdef struct HI: #hashIndex 结构
     
 
 cdef class Init_thesaurus:
+
     '''
     初始化词库
     '''
@@ -79,6 +83,7 @@ cdef class Init_thesaurus:
     cdef int length
 
     def __cinit__(self,char *ph):
+
         '''
         传入词库地址
         初始化词库
@@ -110,6 +115,7 @@ cdef class Init_thesaurus:
             self.word_list[i]=w
 
     def __dealloc__(self):
+
         '''
         释放c内存空间
         '''
@@ -127,6 +133,7 @@ cdef class Init_thesaurus:
 
 
     cdef double v(self,data):
+
         '''
         将元素比较的属性取出
         '''
@@ -137,6 +144,7 @@ cdef class Init_thesaurus:
             print hash(d),d
 
     def find(self,data):
+
         '''
         具体查取值 
         若存在 返回位置 
@@ -222,6 +230,7 @@ cdef struct List:
 
 
 cdef class Hit_lists:
+
     '''
     hit存储队列
     每个list对应于一个存储文件
@@ -232,6 +241,7 @@ cdef class Hit_lists:
         List hit_list[List_num]
 
     def __cinit__(self):
+
         '''
         初始化数据空间
         '''
@@ -247,6 +257,7 @@ cdef class Hit_lists:
                 print '>>init list ok!'
 
     cdef void eq(self,int hit_id,int idx,int wordID,int docID,short score,int pos):
+
         '''
         赋值处理
         '''
@@ -256,6 +267,7 @@ cdef class Hit_lists:
         self.hits[hit_id].start[idx].pos=pos
 
     cdef bint append(self,int hit_id,int wordID,int docID,short score,int pos):
+
         '''
         向list中添加数据
         如果list溢出 则返回False
@@ -286,6 +298,7 @@ cdef class Hit_lists:
             return True
 
     cdef void empty(self,int hit_id):
+
         '''
         将List清空
         释放空间
@@ -302,6 +315,7 @@ cdef class Hit_lists:
 
 
 cdef class sorter:
+
     '''
     最优法排序
     '''
@@ -309,6 +323,7 @@ cdef class sorter:
     cdef Hit_lists dali 
 
     def __cinit__(self):
+
         '''
         初始化 
         将hit队列传递为self
@@ -317,6 +332,7 @@ cdef class sorter:
         self.dali=Hit_lists()
 
     cdef double gvalue(self,data):
+
         '''
         取得值
         '''
@@ -365,6 +381,7 @@ cdef class sorter:
 
 
 cdef class Indexer:
+
     '''
     索引器
     最终将要产生两类hit
@@ -387,6 +404,7 @@ cdef class Indexer:
     cdef Init_thesaurus thes
 
     def __cinit__(self,char *wph,char *toph):
+
         '''
         init
         ph: wordsplit文件目录地址
@@ -400,6 +418,7 @@ cdef class Indexer:
 
 
     cdef int loc_list(self,hashvalue):
+
         '''
         传入一个word
         定位 其 应该存在的 list 
@@ -409,6 +428,7 @@ cdef class Indexer:
         #???????????????????????????????
 
     def run(self):
+
         '''
         运行主程序
         '''
@@ -465,12 +485,15 @@ cdef class Indexer:
                             self.hit_list.empty(list_idx)
 
     cdef sort(self):
+
         '''
         将结果逐个进行排序
+        在客户端已经进行排序???
         '''
         pass
 
     cdef void add_save(self,int list_idx):
+
         '''
         将相关内容添加到文件中 
         默认 便是 在 wordID 范围内乱序排列

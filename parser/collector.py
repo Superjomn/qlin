@@ -1,5 +1,7 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import sys
+reload(sys)
+sys.setdefaultencoding('utf8')
 
 from pyquery import PyQuery as pq
 import xml.dom.minidom as dom
@@ -110,7 +112,7 @@ class collector():
         
         print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
 
-        htmltext=self.d.html().decode('gbk','ignore').encode('utf-8')
+        htmltext=self.d.html()#.decode('gbk','ignore').encode('utf-8')
         
         #print '----------------------------------------->>>>>>>>>>>>>>>'
         #print htmltext

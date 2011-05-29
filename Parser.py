@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
 from pyquery import PyQuery as pq
-from parser.wordlist import wordList as wordlist
+#from parser.wordlist import wordList as wordlist
 import chardet
 import re
 from parser.collector import collector
 from ICTCLAS50.Ictclas import Ictclas
 import os
+import parser.Thes as Thes
        
 
 
@@ -21,18 +23,20 @@ class Parser:
     部分功能嵌入到spider中
     
     '''
-    def __init__(self,htmlph,xmlph,wsplitph,wbpath):
+    def __init__(self,xmlph,wsplitph,wbpath):
         '''
         初始化各项目录
         '''
         self.ict=Ictclas('ICTCLAS50/') 
-        self.wordbar=wordlist()#wordBar
+        #self.wordbar=wordlist()#wordBar
         self.spword='@chunwei@' 
         
-        self.htmlph=htmlph
         self.xmlph=xmlph
         self.wsplitph=wsplitph
         self.wbpath=wbpath
+
+        #初始化词库 
+        self.wordbar = Thes.Create_Thesaurus(self.wbpath)
 
     def splitWord(self):
         '''
@@ -125,12 +129,16 @@ class Parser:
                 self.__wordFind(i)
                 
         strr=''
-        for i in self.wordbar:
+        #for i in self.wordbar.li:
             
-            strr+=i+' '
+            #strr+=i+' '
         f=open(self.wbpath,'w')
-        f.write(strr)
+        f.write(self.wordbar.get_words())
         f.close()
+        
+        print 'begin to create hash'
+
+        self.wordbar.create_hash('store/index_hash.b')
 
     def _debug(self):
         f=open(self.wbpath)
@@ -139,8 +147,8 @@ class Parser:
             print i,hash(i)
 
 if __name__=='__main__':
-    p=parser('store/html','store/document','store/wordsplit','store/wordBar')
+    p=Parser('store/document','store/wordsplit','store/wordBar')
     #p.transDoc()
     #p.splitWord()
-    #p.transWbar()
-    p._debug()
+    p.transWbar()
+    #p._debug()

@@ -3,7 +3,7 @@ import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-import parser.sorter as sorter
+import UrlSorter
 
 class UrlTransID:
     def __init__(self,fp):
@@ -22,8 +22,19 @@ class UrlTransID:
         '''
 		开始进行排序 使用cython进行优化
         '''
-        sort=sorter.Sorter(self.urls)
+        sort=UrlSorter.UrlSorter(self.urls)
         sort.quicksort(0,len(self.urls)-1)
+
+    def save(self,ph):
+        '''
+        将排序结果进行保存
+        '''
+        strr=''
+        for i in self.urls:
+            strr+= i[0]+' '+i[1]+'\n'
+        f=open(ph,'w')
+        f.write(strr)
+        f.close()
     
     def show(self):
         for i in self.urls:
@@ -31,9 +42,10 @@ class UrlTransID:
 
 
 if __name__=='__main__':
-    sort=UrlTransID('../../store/urltest.txt')
+    sort=UrlTransID('../store/urltest.txt')
     sort.show()
     sort.sort()
+    sort.save('../store/sorted_url.txt')
     sort.show()
         
         

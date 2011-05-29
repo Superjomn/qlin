@@ -1,0 +1,58 @@
+中国 农业 大学 产业 办公室  @chunwei@资产 经营 公司  产业 党总支  大学 科技 园  本 站 查询  访问 统计  校 产 信箱  欢迎 访问 中国 农业 大学 资产 经营 管理公司  通知 公告   新闻 动态  @chunwei@@chunwei@@chunwei@@chunwei@@chunwei@中国 农业 大学 产业 办公室   弹 出 广告管理 代码 
+ < script   language = " JavaScript " > 
+     var   delta = 0.15 
+     var   collection ; 
+     function   floaters ( )   { 
+         this.items      =   [ ] ; 
+         this.addItem      =   function ( id , x , y , content ) 
+                   { 
+                     document.write ( ' < DIV   id = ' +id+ '   style = " Z-INDEX:   10 ;   POSITION:   absolute ;    width:80px ;   height:60px ; left: ' + ( typeof ( x ) = = ' string ' ? eval ( x ) : x ) + ' ; top: ' + ( typeof ( y ) = = ' string ' ? eval ( y ) : y ) + ' " > ' +content+ ' < / DIV > ' ) ; 
+                    
+                     var   newItem                  =   { } ; 
+                     newItem.object              =   document.getElementById ( id ) ; 
+                     newItem.x                  =   x ; 
+                     newItem.y                  =   y ;  
+                     this.items [ this.items.length ]          =   newItem ; 
+                   } 
+         this.play      =   function ( ) 
+                   { 
+                     collection                  =   this.items 
+                     setInterval ( ' play ( ) ' , 10 ) ; 
+                   } 
+         } 
+         function   play ( ) 
+         { 
+             if ( screen.width < = 800 ) 
+             { 
+                 for ( var   i = 0 ; i < collection.length ; i++ ) 
+                 { 
+                     collection [ i ] . object.style.display      =   ' none ' ; 
+                 } 
+                 return ; 
+             } 
+             for ( var   i = 0 ; i < collection.length ; i++ ) 
+             { 
+                 var   followObj          =   collection [ i ] . object ; 
+                 var   followObj _ x          =   ( typeof ( collection [ i ] . x ) = = ' string ' ? eval ( collection [ i ] . x ) : collection [ i ] . x ) ; 
+                 var   followObj _ y          =   ( typeof ( collection [ i ] . y ) = = ' string ' ? eval ( collection [ i ] . y ) : collection [ i ] . y ) ;  
+                 if ( followObj.offsetLeft! = ( document.body.scrollLeft+followObj _ x ) )   { 
+                     var   dx = ( document.body.scrollLeft+followObj _ x-followObj.offsetLeft ) * delta ; 
+                     dx = ( dx > 0 ? 1:-1 ) * Math.ceil ( Math.abs ( dx ) ) ; 
+                     followObj.style.left = followObj.offsetLeft+dx ; 
+                     }  
+                 if ( followObj.offsetTop! = ( document.body.scrollTop+followObj _ y ) )   { 
+                     var   dy = ( document.body.scrollTop+followObj _ y-followObj.offsetTop ) * delta ; 
+                     dy = ( dy > 0 ? 1:-1 ) * Math.ceil ( Math.abs ( dy ) ) ; 
+                     followObj.style.top = followObj.offsetTop+dy ; 
+                     } 
+                 followObj.style.display      =   ' ' ; 
+             } 
+         }     
+        
+     var   theFloaters          =   new   floaters ( ) ; 
+     theFloaters.addItem ( ' followDiv1 ' , ' document.body.clientWidth-106 ' , 80 , ' < br > < a   href = http: / / www.cau.edu.cn / cyc / cyc / ad / index.html   target = _ blank > < img    src = " images / ad.jpg "    border = 0 > < / a > ' ) ; 
+     theFloaters.addItem ( ' followDiv2 ' , 6 , 80 , ' < br > < a   href = http: / / www.cau.edu.cn / cyc / cyc / ad / index.html   target = _ blank > < img   src = " images / ad.jpg "    border = 0 > < / a > ' ) ;  
+     theFloaters.play ( ) ;     
+ < / script >   menu   / menu   资产 经营 公司   产业 党总支   大学 科技 园   本 站 查询   关键字   分 　 类   通知 公告   新闻 动态   合作 项目   年度 报告   校 产 通讯   服务 指南   访问 统计   本 日 访问次数   218   本月 访问次数   11944   本年 访问次数   26141   校 产 信箱   欢迎 访问 中国 农业 大学 资产 经营 管理公司   通知 公告   校 产 关于 先进 基层 党支部 、 优秀 共产党员 、 优秀 党务 工作者 推荐 名单 进行 公 示 的 通知   2011-05-09   关于 做好 2010年度 我校 校办 产业 统计 年报 工作 的 通知   2011-03-07   关于 做好 2011年 企业 财务 月报 工作 的 通知   2011-02-22   关于 做好 2010年度 企业 财务 决算 报表 工作 的 通知   2011-01-04   关于 拟 推荐 技术 工人 职业 资格 等级 考试 人员 的 公 示   2010-12-28   关于 召开 产业 系统 职工 联欢会 的 通知   2010-12-15   关于 落实 学校 防火 安全 会议 精神 的 通知   2010-12-01   2010年 校 产 办 职工 考核 公 示   2010-11-23   2010年 中国 农业 大学 产业 系统 羽毛球 比赛 竞赛 规程   2010-11-17   校 产 羽毛球 小组 单 循环 比赛 抽签 结果   2010-11-16   新闻 动态   校 产 党支部 联谊 ， 感受 红旗渠 精神 ( 图文 )   2011-05-24   傅泽田 出席 2011 中国 创意 农业 国际 合作 与 发展 高层 论坛 新闻 发布会   2011-04-22   我校 参加 2011年度 高校 资产 公司 管理 骨干 培训班   2011-04-20   胡锦涛 亲临 海南 国际 创意 港 考察    亲切 接见 我校 创意 农业 研究 中心 团队 。   2011-04-19   我校 参加 全国 农业 院校 校办 产业 协会 常务 理事 会   2011-04-19   2011年 北京市 校办 产业 工作 会议 召开   2011-03-14   资产 经营 公司 召开 2010年 年 会    校领导 傅泽田 、 翟志席 出席   2011-01-26   产业 系统 职工 联欢会 圆满 举行   2011-01-19   傅泽田 出席 “ 爱 我 中华 • 奉献 农业 ” 全国 农科教 推 优秀 单位 与 个人 表彰 大会   2011-01-19   傅泽田 出席 中农 金 旺 公司 “ 馒 首 山 农业 科技 示范 园区 ” 项目 论证会   2011-01-18   中国 农业 大 学校 办 产业 办公室  
+             2004   版权 所有   页面 执行 时间  
+             0.006701   秒   电话 ： 62736902   传真 ： 62736902  
