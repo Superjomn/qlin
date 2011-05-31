@@ -33,22 +33,14 @@ cdef class Create_hashIndex:
         double left     #左侧最小hash
         double right    #右侧最大hash
         int step
+        int cur_step
         
 
-    def __cinit__(self,left,right,li,step):
+    def __cinit__(self,li):
         '''
         init
         '''
         self.wlist=li
-        self.left=left
-        self.right=right
-        self.step=step
-
-    cdef double v(self,double data):
-        '''
-        将元素比较的属性取出
-        '''
-        return data
 
     def show(self):
 
@@ -58,63 +50,17 @@ cdef class Create_hashIndex:
     cdef int find(self,double data):
         '''
         具体查取值 
-        若存在 返回位置 
-        若不存在 返回   0
         '''
-        #需要测试 
-        #print 'want to find ',hash(data),data
+        #使用更加常规的方式
         cdef:
-            int l
-            int fir
-            int mid
-            int end
+            int i
 
-        l=len(self.wlist)
-        dv=self.v(data)     #传入词的hash
+        for i,w in enumerate(self.wlist):
+            if hash(w)>data:
+                return i-1
+        #最后一个词汇 
+        return len(self.wlist)-1
 
-        #取得 hash 的一级推荐范围
-        #此处可以进一步推进fir范围 暂时没有必要
-        fir=0
-        end=l-1
-        mid=0
-
-        if l == 0:
-            return 0#空
-
-        while fir<end:
-
-            mid=(fir+ end)/2
-
-            if ( dv > self.v(self.wlist[mid]) ):
-                fir = mid + 1
-
-            elif  dv < self.v(self.wlist[mid]) :
-                end = mid - 1
-
-            else:
-                break
-
-        if fir == end:
-
-            if self.v(self.wlist[fir]) > dv:
-                #假定 在此hash值内
-                return fir-1 
-
-            elif self.v(self.wlist[fir]) < dv:
-                #此处不确定??????
-                return fir
-
-            else:
-                #print 'return fir,mid,end',fir,mid,end
-                return end#需要测试
-                
-        elif fir>end:
-            #此情况为何种情况????????
-            return 0
-
-        else:
-            #print '1return fir,mid,end',fir,mid,end
-            return mid#需要测试
 
 
 
@@ -127,35 +73,57 @@ cdef class init_hashIndex:
     #define the hash index 
 
     cdef HI hi[STEP]
+    cdef:
+        #hash的左边界
+        double left
+        #hash的右边界
+        double right
 
-    def __cinit__(self,char *ph):
+    def __cinit__(self,char *ph,char *wide_ph):
         '''
         init
         '''
+        #取得hash边界
+        self.get_wide(wide_ph)
+
         cdef FILE *fp=<FILE *>fopen(ph,"rb")
         fread(self.hi,sizeof(HI),STEP,fp)
         fclose(fp)
 
-    def pos(self,double hashvalue):
+    def show(self):
+
+        '''
+        显示
+        '''
+        cdef:
+            int i
+        for i in range(STEP):
+            print self.hi[i].left
+            print self.hi[i].right
+            print '-'*50
+
+    cdef void get_wide(self,char *ph):
+        '''
+        取得hash的左右边界
+        '''
+        f=open(ph)
+        c=f.read()
+        f.close()
+        self.left = float(c.split()[0])
+        self.right = float(c.split()[1])
+
+    def pos(self,long hashvalue):
         '''
         pos the word by hashvalue 
         if the word is beyond hash return -1
         else return the pos
         
-        '''
+       '''
         cdef int cur=-1
         
-        if hashvalue>self.hi[0].left:
-            cur+=1
-        else:
-            return cur
-
-        while hashvalue > self.hi[cur].left:
-
-            cur+=1
-
-        return cur
-
+        cdef double step=<double>( (self.right-self.left)/STEP )
+        
+        return <int>int((hashvalue-self.left)/step)
         
 
 
@@ -204,7 +172,7 @@ cdef class Create_Thesaurus:
         如果查找到 返回True
         如果没有找到 返回False
         '''
-        print 'begin find()'
+        print 'begin find()',word
 
         #定义变量
         cdef:
@@ -356,11 +324,14 @@ cdef class Create_Thesaurus:
         #print 'get the step left ',self.left
         #print 'get the step right',self.right
 
-        step=long( (self.right-self.left)/STEP )
+        step=<double>( (self.right-self.left)/STEP )
+        
 
         #初始化 Create_hashIndex
         #产生 hash参考表
-        cdef Create_hashIndex cHashIdx=Create_hashIndex(self.left,self.right,self.li,STEP)
+        cdef Create_hashIndex cHashIdx=Create_hashIndex(self.li)
+        print '传入 系数',self.left,self.right,STEP
+        print 'the length of wordbar is',len(self.li)
         #定义初始 index为1
         cur_step = 0
 
@@ -372,17 +343,22 @@ cdef class Create_Thesaurus:
 
         for i in range(STEP):
             #寻找边界
-            minidx+=step*i
+            print i
+            minidx += step
             print 'minidx is ',
             print minidx
             print 'step is',
             print step
+            print 'cur_step',cur_step
 
             hashIndex[i].left=cur_step+1
 
             hashIndex[i].right=cHashIdx.find(minidx)
 
             cur_step=hashIndex[i].right
+            print 'right is',cur_step
+            
+            print '>'*50
 
         print 'begin to save the hash'
 
@@ -399,6 +375,17 @@ cdef class Create_Thesaurus:
         fwrite(hi,sizeof(HI),STEP,fp)
         fclose(fp)
         print 'succeed save hash'
+        
+        ############# debug #######################
+        print 'begin to show the hash'
+        cdef int i
+        for i in range(STEP):
+            print i
+            print hi[i].left
+            print hi[i].right
+            print '-'*50
+
+        
 
 
 

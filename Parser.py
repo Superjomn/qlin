@@ -132,6 +132,7 @@ class Parser:
         #for i in self.wordbar.li:
             
             #strr+=i+' '
+
         f=open(self.wbpath,'w')
         f.write(self.wordbar.get_words())
         f.close()
@@ -139,6 +140,8 @@ class Parser:
         print 'begin to create hash'
 
         self.wordbar.create_hash('store/index_hash.b')
+
+        self.wordbar.save_wide('store/word_wide.txt')
 
     def _debug(self):
         f=open(self.wbpath)

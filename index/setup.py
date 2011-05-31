@@ -4,5 +4,5 @@ from Cython.Distutils import build_ext
 
 setup(
 cmdclass = {'build_ext': build_ext},
-ext_modules = [Extension("hit_sort", ["hit_sort.pyx"])]
+ext_modules = [Extension("indexer",["indexer.pyx"])]
 )

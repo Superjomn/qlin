@@ -1,0 +1,58 @@
+中国 农业 大学 产业 办公室  @chunwei@@chunwei@@chunwei@@chunwei@@chunwei@@chunwei@中国 农业 大学 产业 办公室   弹 出 广告管理 代码 
+ < script   language = " JavaScript " > 
+     var   delta = 0.15 
+     var   collection ; 
+     function   floaters ( )   { 
+         this.items      =   [ ] ; 
+         this.addItem      =   function ( id , x , y , content ) 
+                   { 
+                     document.write ( ' < DIV   id = ' +id+ '   style = " Z-INDEX:   10 ;   POSITION:   absolute ;    width:80px ;   height:60px ; left: ' + ( typeof ( x ) = = ' string ' ? eval ( x ) : x ) + ' ; top: ' + ( typeof ( y ) = = ' string ' ? eval ( y ) : y ) + ' " > ' +content+ ' < / DIV > ' ) ; 
+                    
+                     var   newItem                  =   { } ; 
+                     newItem.object              =   document.getElementById ( id ) ; 
+                     newItem.x                  =   x ; 
+                     newItem.y                  =   y ;  
+                     this.items [ this.items.length ]          =   newItem ; 
+                   } 
+         this.play      =   function ( ) 
+                   { 
+                     collection                  =   this.items 
+                     setInterval ( ' play ( ) ' , 10 ) ; 
+                   } 
+         } 
+         function   play ( ) 
+         { 
+             if ( screen.width < = 800 ) 
+             { 
+                 for ( var   i = 0 ; i < collection.length ; i++ ) 
+                 { 
+                     collection [ i ] . object.style.display      =   ' none ' ; 
+                 } 
+                 return ; 
+             } 
+             for ( var   i = 0 ; i < collection.length ; i++ ) 
+             { 
+                 var   followObj          =   collection [ i ] . object ; 
+                 var   followObj _ x          =   ( typeof ( collection [ i ] . x ) = = ' string ' ? eval ( collection [ i ] . x ) : collection [ i ] . x ) ; 
+                 var   followObj _ y          =   ( typeof ( collection [ i ] . y ) = = ' string ' ? eval ( collection [ i ] . y ) : collection [ i ] . y ) ;  
+                 if ( followObj.offsetLeft! = ( document.body.scrollLeft+followObj _ x ) )   { 
+                     var   dx = ( document.body.scrollLeft+followObj _ x-followObj.offsetLeft ) * delta ; 
+                     dx = ( dx > 0 ? 1:-1 ) * Math.ceil ( Math.abs ( dx ) ) ; 
+                     followObj.style.left = followObj.offsetLeft+dx ; 
+                     }  
+                 if ( followObj.offsetTop! = ( document.body.scrollTop+followObj _ y ) )   { 
+                     var   dy = ( document.body.scrollTop+followObj _ y-followObj.offsetTop ) * delta ; 
+                     dy = ( dy > 0 ? 1:-1 ) * Math.ceil ( Math.abs ( dy ) ) ; 
+                     followObj.style.top = followObj.offsetTop+dy ; 
+                     } 
+                 followObj.style.display      =   ' ' ; 
+             } 
+         }     
+        
+     var   theFloaters          =   new   floaters ( ) ; 
+     theFloaters.addItem ( ' followDiv1 ' , ' document.body.clientWidth-106 ' , 80 , ' < br > < a   href = http: / / www.cau.edu.cn / cyc / cyc / ad / index.html   target = _ blank > < img    src = " images / ad.jpg "    border = 0 > < / a > ' ) ; 
+     theFloaters.addItem ( ' followDiv2 ' , 6 , 80 , ' < br > < a   href = http: / / www.cau.edu.cn / cyc / cyc / ad / index.html   target = _ blank > < img   src = " images / ad.jpg "    border = 0 > < / a > ' ) ;  
+     theFloaters.play ( ) ;     
+ < / script >   menu   / menu   企   业   名   称   负责人   电   话   手   机   传   真   经营 内容   备   注   北京 中农 大地 科技 发展 有限公司   傅 泽田   62328899-3301   62328899-3988   经营 管理   有限   北京 东方 畅想 建筑设计 有限公司   南国 良   82838866-2004   13601079662   82838866-2202   建筑设计   股份制   北京 双 电 电子 电力 技术 公司   杨仁 刚   62736745   13901063528   62736742   电子 电力   国有   正大 涿州 肉鸡 发展 中心   马 守 东   03123792637   13603241328   03123792183   种鸡   国有   北 农 ( 海利 ) 涿州 种 衣 剂 有限公司   丁 明   03123792298   13607316621   03123792900   种 衣 剂   国有   北京市 富 通 环境工程 有限公司   马 承 伟   62329109   13910717814   62736917-117   湿 帘 纸   国有   北京市 先 飞 农业 工程 高 技术 公司   杨 培 岭   62310037   13321162786   62736911   节水 技术   国有   北京 欣 中农 油泵 油嘴 维修 有限公司   王惠菁   62736574   13501382995   62398501   维修 服务   股份制   北 农大 新 技术开发 总公司   刘 志 平   62732908   13601304985   62731056   国有   中国 农业 大学 出版社   汪 春 林   62731203   13501023345   62732620   出版 图书   国有   北京 震 亚 预 混 饲料厂   呙 玉 明   62815567   13901029899   62733900   饲   料   国有   北京 圆 西 文化 服务 中心   黄 兴建   62732737   13693350938   62732716   打字 、 印刷   国有   北京 思 农 玉米 育种 开发 中心   苏 胜 宝   62733057   13701226224   62731023   玉米 良种   国有   中农 大 生物 技术 股份 有限公司   高 恩 复   82375379   82375728-220   生产 、 销售 兽 药 、 农药   股份制   中农 大 网络 发展 公司   顾 培 德   62966818   13601837660   62966655-500   网络 教育   股份制   北京 龙 科 方舟 饲料 有限公司   李德 发   62731456   62829803-8001   有限   北 农大 动物 科技 有限 责任 公司   张 庆 才   62731102   13701177627   62731090   动物 饲料   股份制   中 农大 康 科技 开发 有限公司   李 建 生   82893682   13671337475   82781958-804   玉米 新品种 选育   股份制   北京 我 爱 我 爱 动物 医院 有限公司   汪 明   87375252-216   13601293795   87371999-555   诊治 宠物 疾病   股份制   金码 大酒店 ( 国际 )   李 世 盛   62328899-3996   13701190461   62328899-3901   酒店管理   国有   北京 中农 大 科技 企业 孵化器 有限公司   胡 金 有   62737370   13601363645   62732266   企业 孵化   股份制   北京 中农 大 科技 开发 有限 责任 公司   邱晓松   62736884   13911114029   62736884   股份制   中农 金旺 （ 北京 ） 农业 工程技术 有限公司   张 德 林   82388788   13501260817   82388788   农业 设施 温室 工程   股份制   中国 农业 大 学校 办 产业 办公室  
+             2004   版权 所有   页面 执行 时间  
+             0.004765   秒   电话 ： 62736902   传真 ： 62736902  
