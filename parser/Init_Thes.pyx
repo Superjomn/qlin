@@ -126,6 +126,8 @@ cdef class Init_thesaurus:
         #开始分配词库内存空间
         cdef char  **li=<char **>malloc( sizeof(char *) * self.length )
 
+        print '初始化词库 分配了',sizeof(li)/sizeof(char *),'块内存'
+
         if li!=NULL:
             print 'the li is successful'
             self.word_list=li
@@ -139,7 +141,7 @@ cdef class Init_thesaurus:
 
         for i,w in enumerate(words):
 
-            self.word_list[i]=<char *>malloc( sizeof(char) * len(w) )
+            #self.word_list[i]=<char *>malloc( sizeof(char) * len(w) )
             #print 'the word is '
 
             #print w
@@ -174,6 +176,7 @@ cdef class Init_thesaurus:
 
         return hash(data)
 
+
     def show(self):
 
         '''
@@ -184,7 +187,8 @@ cdef class Init_thesaurus:
 
         print 'the length is',self.length
         for i in range(self.length):
-            print self.word_list[i]
+            print i,self.word_list[i]
+
 
     def find(self,data):
 
@@ -194,9 +198,10 @@ cdef class Init_thesaurus:
         若不存在 返回   0
         '''
 
-        print 'in wordbar now'
+        '''print 'in wordbar now'
         print '> begin to find',data
-
+        print 'length of wordbar', self.length
+        '''
         #需要测试 
         #print 'want to find ',hash(data),data
         cdef:
@@ -207,12 +212,18 @@ cdef class Init_thesaurus:
             int pos
             HI cur  #范围
 
+        #print '初始化数据ok'
+
         dv=self.v(data)     #传入词的hash
 
         pos=self.hashIndex.pos( dv )
 
+        #print '开始 pos',pos
+
         if pos!=-1 and pos<STEP:
+            print '开始>cur=self.hashIndex.hi[pos]'
             cur=self.hashIndex.hi[pos]
+            print 'cur< OK '
 
         else:
             print "the word is not in wordbar or pos wrong"
@@ -223,20 +234,41 @@ cdef class Init_thesaurus:
         end=cur.right
         mid=fir
 
+        #print '词库: fir,end,mid',fir,end,mid
+
         while fir<end:
 
+            #print 'in wordbar while'
+            #print 'dv',dv
+
             mid=(fir+ end)/2
+            #print 'mid',mid
+            '''
+            print 'self.word_list[mid]'
+            print self.word_list[mid]
+
+            print 'dv self.v(self.word_list[mid])'
+            print dv,self.v(self.word_list[mid])
+
+            print '-'*50
+            '''
+
+
 
             if ( dv > self.v(self.word_list[mid]) ):
                 fir = mid + 1
+                #print '1 if fir',fir
 
             elif  dv < self.v(self.word_list[mid]) :
                 end = mid - 1
+                #print '1 elif end',end
 
             else:
                 break
 
         if fir == end:
+            
+            #print 'fir==end'
 
             if self.v(self.word_list[fir]) > dv:
                 return 0 
@@ -246,6 +278,7 @@ cdef class Init_thesaurus:
 
             else:
                 #print 'return fir,mid,end',fir,mid,end
+                #print '查得 wordid',end
                 return end#需要测试
                 
         elif fir>end:
@@ -253,6 +286,7 @@ cdef class Init_thesaurus:
 
         else:
             #print '1return fir,mid,end',fir,mid,end
+            #print '查得 wordid',mid
             return mid#需要测试
 
 

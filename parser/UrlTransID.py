@@ -24,7 +24,7 @@ class UrlTransID:
         for l in lines:
             self.urls.append(l.split())
 
-        self.trans_ph=trans_ph
+        self.trans_ph=url_ph
     
 
     def sort(self):

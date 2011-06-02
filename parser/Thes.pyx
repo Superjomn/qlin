@@ -375,6 +375,7 @@ cdef class Create_Thesaurus:
         cdef Create_hashIndex cHashIdx=Create_hashIndex(self.li)
         print '传入 系数',self.left,self.right,STEP
         print 'the length of wordbar is',len(self.li)
+
         #定义初始 index为1
         cur_step = 0
 
@@ -407,6 +408,7 @@ cdef class Create_Thesaurus:
 
         self.save_hash(ph,hashIndex)
 
+
     cdef save_hash(self,char *ph,HI *hi):
 
         '''
@@ -426,6 +428,7 @@ cdef class Create_Thesaurus:
         print 'begin to show the hash'
 
         cdef int i
+
         for i in range(STEP):
             print i
             print hi[i].left

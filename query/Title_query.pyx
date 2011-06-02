@@ -1,3 +1,17 @@
+###############################
+#  需要 初始化一块 wordid hash表
+#
+###############################
+
+from libc.stdlib cimport malloc,free,realloc
+
+#记录的hit结构
+cdef struct Whit:
+    int docid
+    int score
+
+
+
 cdef class query:
 
     '''
@@ -18,6 +32,26 @@ cdef class query:
         '''
 
         pass
+
+    def find_words(self,para):
+
+        '''
+        将词汇分词
+        并且进行插曲
+        '''
+        words = wordsplit(para)
+
+        #对word进行分组
+        group_words()
+
+        #对每个word进行处理
+        for word in words:
+            #进行查取
+            #同时自动收录value
+            hit_find(word) 
+
+
+
 
 
     cdef gro_words(self):
@@ -62,4 +96,4 @@ cdef class query:
 
 
 
-
+def class query:
