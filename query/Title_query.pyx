@@ -1,12 +1,9 @@
 
 from parser.Init_Thes import Init_thesaurus , init_hashIndex
 
-from libc.stdlib cimport malloc,free,realloc
+from libc.stdlib cimport realloc,malloc,free
 
 from libc.stdio cimport fopen, fwrite, fread,fclose,FILE 
-
-from libc.stdlib cimport malloc,free,realloc
-
 
 from ICTCLAS50.Ictclas import Ictclas
 
@@ -14,19 +11,19 @@ from ICTCLAS50.Ictclas import Ictclas
 DEF List_num = 20         #hit_lists中划分 块 数目
 
 
-        '''
-        算法：
-            定位到 wordid
-            返回每个docid的第一个记录
-            
-            再查找第二个词及以上时
-            直接在wordid中扫描原有docid
-            如果存在 加上score 否则 将原有记录刷新为0（表示放弃此docid)
-            
-            一直到最后 整理结果
-            进行排序
-            返回结果
-        '''
+'''
+算法：
+    定位到 wordid
+    返回每个docid的第一个记录
+    
+    再查找第二个词及以上时
+    直接在wordid中扫描原有docid
+    如果存在 加上score 否则 将原有记录刷新为0（表示放弃此docid)
+    
+    一直到最后 整理结果
+    进行排序
+    返回结果
+'''
 
 
 #定义 Hit 结构
@@ -53,8 +50,10 @@ cdef struct WhitList:
     Whit *whit
 
 
-DEF Whit_init_num 100  
-DEF Whit_add      30
+DEF Whit_init_num = 100  
+DEF Whit_add  =    30
+
+
 
 ####################################
 #       在扫描过程中同时计算rank
@@ -62,6 +61,29 @@ DEF Whit_add      30
 ####################################
 DEF SCORE_EACH = 1
 
+DEF SCORE_TITLE = 0
+DEF SCORE_B = 1
+DEF SCORE_H1 = 2
+DEF SCORE_A = 5
+DEF SCORE_CONTENT = 6
+
+cdef inline float sc(int score):
+
+    '''
+    计算权值
+    '''
+    if score == SCORE_TITLE:
+        return 5
+    elif score ==SCORE_B:
+        return 2.5
+    elif score >= SCORE_H1 and score <= SCORE_H1 + 2:
+        return 2.5
+    elif score == SCORE_A:
+        return 1
+    elif score == SCORE_CONTENT:
+        return 2
+    return 0
+    
 
 
 cdef class Whit_list:
@@ -71,20 +93,35 @@ cdef class Whit_list:
     管理程序
     '''
 
-    cdef WhitList hit_list
-    #扫描时 索引
-    cdef int scan_id = 0
+    cdef WhitList *hit_list
 
-    def __cinit__(self,Whit_list whit_list):
+    #扫描时 索引
+    cdef int scan_id 
+
+    #公用 wid
+
+    def __cinit__(self,int wid):
 
         '''
         init
         '''
+        self.scan_id = 0
+    
+        self.wid = wid
+
+
+        
+    cdef init(self,WhitList *whit_list):
+
+        '''
+        c语言层面的init
+        '''
+
         self.hit_list = whit_list
 
         #若whit_list　内存未分配
         #则进行分配 
-        if self.hit_list == NULL:
+        if self.hit_list.whit == NULL:
             print 'the whit_list is empty'
             print 'begin to malloc'
 
@@ -94,6 +131,7 @@ cdef class Whit_list:
             self.hit_list.empty = 0 #初始时无效记录数目为0 
 
 
+
     cdef void  append(self, Hit hit):
         
         '''
@@ -101,17 +139,18 @@ cdef class Whit_list:
         在初始化wlist时候使用
         将 hit_list 自动加入到 whit_list中
         '''
+        cdef Whit *base
         
         self.hit_list.top += 1
         self.hit_list.whit[self.top].docID = hit.docID
         self.hit_list.whit[self.top].pos = hit.pos
+
         #计算权质
-        self.hit_list.whit[self.top].rank = hit.score * SCORE_EACH    
+        self.hit_list.whit[self.top].rank = sc(hit.score)# * SCORE_EACH    
         
         if self.hit_list.top > self.hit_list.length - 2:
             #重新分配
-            Whit *base
-            base = <Whit *>realloc( self.hit_list.whit , sizeof(Whit) * (self.hit_list.length + Whit_add)
+            base = <Whit *> realloc( self.hit_list.whit , sizeof(Whit) * (self.hit_list.length + Whit_add) )
 
             if base != NULL:
                 self.hit_list.whit = base
@@ -154,7 +193,7 @@ cdef class Whit_list:
             return 2  
 
         if hit.docID == cur_did:
-            self.hit_list.whit[self.scan_id].rank += hit.score * SCORE_ADD
+            self.hit_list.whit[self.scan_id].rank += sc(hit.score)# * SCORE_ADD
             self.scan_id += 1
 
             return 0
@@ -180,6 +219,8 @@ cdef class Whit_list:
         '''
         self.scan_id = 0
             
+
+           
 
         
 
@@ -217,6 +258,9 @@ cdef class Hit_find:
     #每个hit文件的长度
     cdef int width[List_num]
 
+    #公用 wid
+    cdef int wid
+
     #运行时相关变量
     cdef:
         #wid的边界
@@ -225,7 +269,7 @@ cdef class Hit_find:
 
 
 
-    def __cinit__(self,char *fdir,char *width_ph,WhitList whit):
+    def __cinit__(self,char *fdir,char *width_ph,WhitList whit, int wid):
 
         '''
         init
@@ -233,13 +277,17 @@ cdef class Hit_find:
         '''
         #初始化hit地址
         self.fdir=fdir
+
         #初始化 hashIndex 便于判断 word该属于文件
         self.hashIndex = init_hashIndex("store/index_hash.b","store/word_wide.txt")
+
+        self.wid = wid
 
         #初始化 whit 运行时内存池
         #直接与父whit相同
         #结构体能否协调一直　需要测试!!!!!!!!!!!?????????????????????
-        self.whit_list = whit_list(whit)
+
+        self.whit_list = Whit_list(whit)
 
         #初始化width
         f = open(width_ph)
@@ -268,6 +316,9 @@ cdef class Hit_find:
         #分配内存
         self.hit_list=<Hit *>malloc(sizeof(Hit) * self.width[index])
 
+        #负值hit_list长度
+        self.length = int(self.width[index])
+
         #读入数据
         print 'begin read the file'
 
@@ -277,6 +328,9 @@ cdef class Hit_find:
         通过 hashvalue 确定并且载入相应的hit文件内容
         '''
         cdef int index = self.hashIndex.pos(hashvalue)
+        cdef char *fn
+        cdef FILE *fp
+
         #如果为同一个范围内word
         #不进行处理
         if index == self.cur_hit_file:
@@ -296,13 +350,13 @@ cdef class Hit_find:
             #读入数据
             print 'begin read the file'
 
-            fname = fdir +ind +'.hit'
+            fname = self.fdir +ind +'.hit'
             
-            cdef char *fn = fname
+            fn = fname
 
             print 'the fname is',fn
 
-            cdef FILE *fp=<FILE *>fopen(fn,"rb")
+            fp=<FILE *>fopen(fn,"rb")
             fread(self.hit_list , sizeof(Hit), self.width[index] ,fp)
             fclose(fp)
 
@@ -310,19 +364,79 @@ cdef class Hit_find:
             self.length = int(self.width[index])
 
 
-    cdef void pos_wid_scope(self,int wid):
+    cdef inline void pos_mid_wid(self):
+
+        '''
+        利用二分发确定wid的大概位置
+        '''
+        self.wleft_id=0 #??????????????
+        self.wright_id=0
+
+        cdef:
+            int fir
+            int mid
+            int end
+
+        fir = 0
+        mid = 0
+        end = self.length-1
+
+        while fir<end:
+            mid = (fir+end)/2
+            if self.wid > self.hit_list[mid].wordID:
+                fir = mid+1
+
+            elif self.wid < self.hit_list[mid].wordID:
+                end = mid-1
+
+            else:
+                break
+
+        if fir == end:
+            if self.hit_list[fir] != self.wid:
+                #wid在文件中不存在
+                return 0
+
+            else:
+                return mid
+
+        elif fir>end:
+            return 0
+
+        else:
+            return mid
+
+
+    cdef void pos_wid_scope(self):
 
         '''
         确定wid在hit列表中范围
         需要另外的wid的hash表支持
         '''
-        self.wleft_id=0 #??????????????
-        self.wright_id=0
-        pass
+        cdef:
+            int i
+
+        i=self.pos_mid_wid()
+
+        while i>=0:
+            if self.hit_list[i].wordID == self.wid:
+                i -= 1
+            else:
+                break
+
+        self.wleft_id = i+1
+        
+        while i<=self.length-1:
+            if self.hit_list[i].wordID == self.wid:
+                i += 1
+            else:
+                break
+
+        self.wright_id = i-1
 
 
 
-    cdef void init_whit_list(self,int wid):
+    cdef void init_whit_list(self):
 
         '''
         从第一个词开始
@@ -340,7 +454,7 @@ cdef class Hit_find:
         self.whit_list = <Whit *>malloc(sizeof(Whit) * Whit_init_num )
 
         #确定wid边界
-        self.pos_wid_scope(self,wid)
+        self.pos_wid_scope()
         #初始时 cur_did 故意不同
         cur_did = self.hit_list[self.wleft_id].docID - 1
 
@@ -380,14 +494,14 @@ cdef class Hit_find:
         self.init_hit_file(hashvalue)
         #确定wid对应字段范围
         #此处需要确定　wid
-        self.pos_wid_scope(wid)
+        self.pos_wid_scope()
 
 
         #自动初始化
         #标志为 self.whit_list.top==-1
         if self.whit_list.top == -1:
             #此处需要确定　wid !!!!?????????????????????
-            self.init_whit_list(wid)
+            self.init_whit_list()
 
 
         #开始遍历 对did进行处理
@@ -463,7 +577,7 @@ cdef class RankSorter:
 
             while p<q:
 
-                j=self.partition(a,p,q)
+                j=self.partition(self.dali,p,q)
 
                 if (j-p)<(q-j):
                     st.append(j+1)
@@ -482,23 +596,23 @@ cdef class RankSorter:
             p=st.pop()
 
 
-    cdef int partition(self,a,int low,int high):
+    cdef int partition(self,self.dali,int low,int high):
 
-        v=a[low]
+        v=self.dali[low]
 
         while low<high:
 
-            while low<high and self.gvalue( a[high] ) >= self.gvalue( v ):
+            while low<high and self.gvalue( self.dali[high] ) >= self.gvalue( v ):
 
                 high-=1
 
-            a[low]=a[high]
+            self.dali[low]=self.dali[high]
 
-            while low<high and self.gvalue( a[low] )<=self.gvalue( v ):
+            while low<high and self.gvalue( self.dali[low] )<=self.gvalue( v ):
                 low+=1
-            a[high]=a[low]
+            self.dali[high]=self.dali[low]
 
-        a[low]=v
+        self.dali[low]=v
 
         return low
 
@@ -510,11 +624,6 @@ cdef class RankSorter:
         '''
         self.quicksort(0,self.length-1)
 
-
-    def showlist(self):
-
-        for i in self.dali:
-            print i
 
 
 #最终整理过的结果整理结构
@@ -557,7 +666,10 @@ cdef class Query:
     cdef Pack_res pack_res
     
     #排序库
-    cdef Rank_sorter rank_sort
+    cdef RankSorter rank_sort
+
+    #词库
+    cdef object thes
 
 
     def __cinit__(self,char *fdir,char *width_ph):
@@ -577,6 +689,10 @@ cdef class Query:
         #排序库
         self.rank_sort=RankSorter()
 
+        #词库
+
+        self.thes=Init_thesaurus('store/wordBar')
+
 
     cdef void word_split(self,paragh):
 
@@ -594,16 +710,20 @@ cdef class Query:
         将词汇分词
         并且进行插曲
         '''
+        cdef:
+            int wid
 
         #对word进行分组
-        group_words()
+        self.group_words()
 
         #对每个word进行处理
         for word in words:
             #进行查取
             #同时自动收录value
             #hit_find会自动对父亲的hit存储池进行修改扩充
-            self.hit_find.find(word) 
+            wid = self.thes.find(word)
+
+            self.hit_find.find(word,wid) 
 
 
     cdef short res_pack(self):
@@ -669,5 +789,7 @@ cdef class Query:
         '''
         self.rank_sort.init(self.pack_res)
         self.rank_sort.run()
+
+        #开始将子类进行复原
 
 
