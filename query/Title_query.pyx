@@ -79,20 +79,6 @@ cdef struct Pack_res:
 DEF Whit_init_num = 100  
 DEF Whit_add  =    30
 
-####################################
-#
-#   Init_Thes
-#
-####################################
-
-
-
-
-
-
-
-
-
 
 ####################################
 #       在扫描过程中同时计算rank
@@ -148,15 +134,13 @@ cdef class Whit_list:
         self.scan_id = 0
     
         
-    cdef init(self,WhitList *whit_list,int wid):
+    cdef init(self,WhitList *whit_list):
 
         '''
         c语言层面的init
         '''
         #引用方式传递 直接修改直
         self.hit_list = whit_list
-
-        self.wid = wid
 
         #若whit_list　内存未分配
         #则进行分配 
@@ -168,6 +152,14 @@ cdef class Whit_list:
             self.hit_list.top = -1
             self.hit_list.length = Whit_init_num
             self.hit_list.empty = 0 #初始时无效记录数目为0 
+
+
+    cdef flush(self,int wid):
+
+        '''
+        刷新 wid
+        '''
+        self.wid = wid
 
 
     cdef show(self):
@@ -195,6 +187,8 @@ cdef class Whit_list:
         cdef:
             int i
         
+        print '+ whit_list -append'
+        
         self.hit_list.top += 1
         self.hit_list.whit[self.hit_list.top].docID = hit.docID
         self.hit_list.whit[self.hit_list.top].pos = hit.pos
@@ -203,7 +197,7 @@ cdef class Whit_list:
         #初始化时  直接赋值
         print '+whit_list - append',self.hit_list.top,self.hit_list.whit[self.hit_list.top].docID
 
-        self.hit_list.whit[self.top].rank = sc(hit.score)# * SCORE_EACH    
+        self.hit_list.whit[self.hit_list.top].rank = sc(hit.score)# * SCORE_EACH    
         
         if self.hit_list.top > self.hit_list.length - 2:
             #重新分配
@@ -235,6 +229,8 @@ cdef class Whit_list:
         cdef:
             int j
             int cur_did
+
+        print '+ whit_list - add'
 
         #去除无用记录 
         while self.hit_list.whit[self.scan_id].rank ==-1 and self.scan_id <= self.hit_list.top:
@@ -363,23 +359,29 @@ cdef class Hit_find:
             i+=1
 
 
-    cdef void init(self,WhitList *whit, int wid):
+    cdef void init(self,WhitList *whit):
 
         '''
         c语言层面的 init
         '''
-
-        self.wid = wid
-
         #初始化 whit 运行时内存池
         #直接与父whit相同
         #结构体能否协调一直　需要测试!!!!!!!!!!!?????????????????????
 
         self.whit_list = Whit_list()
-        self.whit_list.init(whit,wid)
+        self.whit_list.init(whit)
         #为了对 公共池 取得足够的控制 
         #本地取得一个索引副本
         self.wlist = whit
+
+
+    cdef void flush(self,int wid):
+
+        '''
+        刷新wid
+        '''
+        self.wid = wid
+        self.whit_list.flush(wid)
 
 
 
@@ -476,16 +478,22 @@ cdef class Hit_find:
         '''
         cdef:
             int i
+            int j
 
         i=self.pos_mid_wid()
 
-        while i>=0:
-            if self.hit_list[i].wordID == self.wid:
-                i -= 1
+        print 'get mid wid',i
+        
+        j=i
+
+        while j>=0:
+            if self.hit_list[j].wordID == self.wid:
+                j -= 1
             else:
                 break
 
-        self.wleft_id = i+1
+        self.wleft_id = j+1
+        
         
         while i<=self.length-1:
             if self.hit_list[i].wordID == self.wid:
@@ -504,6 +512,7 @@ cdef class Hit_find:
         首次初始化whit空间
         以后的词均在此空间内进行过滤便可
         '''
+        print '+hit_list - init_whit_list'
 
         cdef:
             #当前搜索的did
@@ -517,6 +526,8 @@ cdef class Hit_find:
         #初始时 cur_did 故意不同
 
         cur_did = self.hit_list[self.wleft_id].docID - 1
+        
+        print 'leftid rigthid',self.wleft_id,self.wright_id
 
         i=self.wleft_id
         #初始化第一个did
@@ -526,6 +537,7 @@ cdef class Hit_find:
                 pass
 
             else:
+                print '- whit_list append',cur_did
                 self.whit_list.append(self.hit_list[i])
                 cur_did = self.hit_list[i].docID
 
@@ -791,6 +803,8 @@ cdef class Query:
         self.group_words()
 
         #对每个word进行处理
+        self.hit_find.init(&self.hit_list)
+
         for word in self.words:
             #进行查取
             #同时自动收录value
@@ -800,20 +814,29 @@ cdef class Query:
 
             wid = self.thes.find(word)
             print 'the wid is',wid
+
+            #对词的存在性进行分析
+            if wid == -1:
+                return False
             
             #初始化 hit查找库
             print '- init hit_find'
-            self.hit_find.init(&self.hit_list,wid)
+            self.hit_find.flush(wid)
 
             self.hit_find.find(word) 
 
         #查找完毕 开始后续处理
         #结果加工
         print 'begin to pack res'
-        self.res_pack()
+
+        if self.res_pack() == -1:
+            return False
+
         #结果排序
         print 'begin to sort res'
         self.sort()
+
+        return True
 
 
     cdef short res_pack(self):
@@ -825,6 +848,7 @@ cdef class Query:
 
         同时　将各个类清0 还原
         '''
+
         if self.hit_list.empty == self.hit_list.top+1:
             #无有效结果
             return -1
@@ -915,9 +939,4 @@ cdef class Query:
         self.hit_list.length = 0
         self.hit_list.top = -1
         self.hit_list.empty = 0
-
-
-
-
-
 

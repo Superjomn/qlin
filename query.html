@@ -1,0 +1,914 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>~/qlin/query/Title_query.pyx.html</title>
+<meta name="Generator" content="Vim/7.2">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body bgcolor="#ffffff" text="#000000"><font face="monospace">
+<font color="#ffff00">&nbsp;&nbsp;1 </font><font color="#8080ff"># -*- coding: ISO-8859-15 -*-</font><br>
+<font color="#ffff00">&nbsp;&nbsp;2 </font><br>
+<font color="#ffff00">&nbsp;&nbsp;3 </font><font color="#8080ff">##################################################</font><br>
+<font color="#ffff00">&nbsp;&nbsp;4 </font><font color="#8080ff">#</font><br>
+<font color="#ffff00">&nbsp;&nbsp;5 </font><font color="#8080ff">#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Query: 查询库</font><br>
+<font color="#ffff00">&nbsp;&nbsp;6 </font><font color="#8080ff">#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; qlin 内网全文搜索引擎</font><br>
+<font color="#ffff00">&nbsp;&nbsp;7 </font><font color="#8080ff">#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Created by Chunwei</font><br>
+<font color="#ffff00">&nbsp;&nbsp;8 </font><font color="#8080ff">#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; in memory of a friend </font><br>
+<font color="#ffff00">&nbsp;&nbsp;9 </font><font color="#8080ff">#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Best Wishes to Lavender!</font><br>
+<font color="#ffff00">&nbsp;10 </font><font color="#8080ff">#</font><br>
+<font color="#ffff00">&nbsp;11 </font><font color="#8080ff">##################################################</font><br>
+<font color="#ffff00">&nbsp;12 </font><br>
+<font color="#ffff00">&nbsp;13 </font><font color="#ff40ff">import</font>&nbsp;sys<br>
+<font color="#ffff00">&nbsp;14 </font><font color="#00ffff">reload</font>(sys)<br>
+<font color="#ffff00">&nbsp;15 </font>sys.setdefaultencoding(<font color="#ff6060">'utf8'</font>)<br>
+<font color="#ffff00">&nbsp;16 </font><br>
+<font color="#ffff00">&nbsp;17 </font><br>
+<font color="#ffff00">&nbsp;18 </font><br>
+<font color="#ffff00">&nbsp;19 </font><font color="#ff40ff">from</font>&nbsp;parser.Init_Thes <font color="#ff40ff">import</font>&nbsp;Init_thesaurus , init_hashIndex<br>
+<font color="#ffff00">&nbsp;20 </font><br>
+<font color="#ffff00">&nbsp;21 </font><font color="#ff40ff">from</font>&nbsp;libc.stdlib <font color="#ff40ff">cimport</font>&nbsp;realloc,malloc,free<br>
+<font color="#ffff00">&nbsp;22 </font><br>
+<font color="#ffff00">&nbsp;23 </font><font color="#ff40ff">from</font>&nbsp;libc.stdio <font color="#ff40ff">cimport</font>&nbsp;fopen, fwrite, fread,fclose,FILE <br>
+<font color="#ffff00">&nbsp;24 </font><br>
+<font color="#ffff00">&nbsp;25 </font><font color="#ff40ff">from</font>&nbsp;ICTCLAS50.Ictclas <font color="#ff40ff">import</font>&nbsp;Ictclas<br>
+<font color="#ffff00">&nbsp;26 </font><br>
+<font color="#ffff00">&nbsp;27 </font><font color="#ff40ff">import</font>&nbsp;chardet <font color="#ffff00">as</font>&nbsp;cdt<br>
+<font color="#ffff00">&nbsp;28 </font><br>
+<font color="#ffff00">&nbsp;29 </font><br>
+<font color="#ffff00">&nbsp;30 </font>DEF List_num = <font color="#ff6060">20</font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <font color="#8080ff">#hit_lists中划分 块 数目</font><br>
+<font color="#ffff00">&nbsp;31 </font><br>
+<font color="#ffff00">&nbsp;32 </font><br>
+<font color="#ffff00">&nbsp;33 </font><font color="#ff6060">'''</font><br>
+<font color="#ffff00">&nbsp;34 </font><font color="#ff6060">算法：</font><br>
+<font color="#ffff00">&nbsp;35 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;定位到 wordid</font><br>
+<font color="#ffff00">&nbsp;36 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;返回每个docid的第一个记录</font><br>
+<font color="#ffff00">&nbsp;37 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;</font><br>
+<font color="#ffff00">&nbsp;38 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;再查找第二个词及以上时</font><br>
+<font color="#ffff00">&nbsp;39 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;直接在wordid中扫描原有docid</font><br>
+<font color="#ffff00">&nbsp;40 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;如果存在 加上score 否则 将原有记录刷新为0（表示放弃此docid)</font><br>
+<font color="#ffff00">&nbsp;41 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;</font><br>
+<font color="#ffff00">&nbsp;42 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;一直到最后 整理结果</font><br>
+<font color="#ffff00">&nbsp;43 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;进行排序</font><br>
+<font color="#ffff00">&nbsp;44 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;返回结果</font><br>
+<font color="#ffff00">&nbsp;45 </font><font color="#ff6060">'''</font><br>
+<font color="#ffff00">&nbsp;46 </font><br>
+<font color="#ffff00">&nbsp;47 </font><br>
+<font color="#ffff00">&nbsp;48 </font><font color="#8080ff">#定义 Hit 结构</font><br>
+<font color="#ffff00">&nbsp;49 </font><font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">struct</font>&nbsp;Hit:<br>
+<font color="#ffff00">&nbsp;50 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;wordID<br>
+<font color="#ffff00">&nbsp;51 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;docID<br>
+<font color="#ffff00">&nbsp;52 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">short</font>&nbsp;score<br>
+<font color="#ffff00">&nbsp;53 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;pos<br>
+<font color="#ffff00">&nbsp;54 </font><br>
+<font color="#ffff00">&nbsp;55 </font><font color="#8080ff">#查询时 存储队列</font><br>
+<font color="#ffff00">&nbsp;56 </font><font color="#8080ff">#此处score未加以存储&nbsp;&nbsp;&nbsp;&nbsp;不可以直接继承</font><br>
+<font color="#ffff00">&nbsp;57 </font><font color="#8080ff">#直接计算其权质</font><br>
+<font color="#ffff00">&nbsp;58 </font><font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">struct</font>&nbsp;Whit:<br>
+<font color="#ffff00">&nbsp;59 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;docID<br>
+<font color="#ffff00">&nbsp;60 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;pos&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <font color="#8080ff">#可以直接比较位置</font><br>
+<font color="#ffff00">&nbsp;61 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">float</font>&nbsp;rank&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#得分</font><br>
+<font color="#ffff00">&nbsp;62 </font><br>
+<font color="#ffff00">&nbsp;63 </font><font color="#8080ff">#为了方便父亲和子类间信息交流</font><br>
+<font color="#ffff00">&nbsp;64 </font><font color="#8080ff">#定义whit_list 结构定义</font><br>
+<font color="#ffff00">&nbsp;65 </font><font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">struct</font>&nbsp;WhitList:<br>
+<font color="#ffff00">&nbsp;66 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;length<br>
+<font color="#ffff00">&nbsp;67 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;top<br>
+<font color="#ffff00">&nbsp;68 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;empty <font color="#8080ff">#无效记录的数目</font><br>
+<font color="#ffff00">&nbsp;69 </font>&nbsp;&nbsp;&nbsp;&nbsp;Whit *whit<br>
+<font color="#ffff00">&nbsp;70 </font><br>
+<font color="#ffff00">&nbsp;71 </font><br>
+<font color="#ffff00">&nbsp;72 </font><font color="#8080ff">#最终整理过的结果整理结构</font><br>
+<font color="#ffff00">&nbsp;73 </font><font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">struct</font>&nbsp;Pack_res:<br>
+<font color="#ffff00">&nbsp;74 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;length<br>
+<font color="#ffff00">&nbsp;75 </font>&nbsp;&nbsp;&nbsp;&nbsp;Whit *whit<br>
+<font color="#ffff00">&nbsp;76 </font><br>
+<font color="#ffff00">&nbsp;77 </font><br>
+<font color="#ffff00">&nbsp;78 </font><br>
+<font color="#ffff00">&nbsp;79 </font>DEF Whit_init_num = <font color="#ff6060">100</font>&nbsp;&nbsp;<br>
+<font color="#ffff00">&nbsp;80 </font>DEF Whit_add&nbsp;&nbsp;=&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">30</font><br>
+<font color="#ffff00">&nbsp;81 </font><br>
+<font color="#ffff00">&nbsp;82 </font><br>
+<font color="#ffff00">&nbsp;83 </font><font color="#8080ff">####################################</font><br>
+<font color="#ffff00">&nbsp;84 </font><font color="#8080ff">#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 在扫描过程中同时计算rank</font><br>
+<font color="#ffff00">&nbsp;85 </font><font color="#8080ff">#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 计算 权值</font><br>
+<font color="#ffff00">&nbsp;86 </font><font color="#8080ff">####################################</font><br>
+<font color="#ffff00">&nbsp;87 </font>DEF SCORE_EACH = <font color="#ff6060">1</font><br>
+<font color="#ffff00">&nbsp;88 </font><br>
+<font color="#ffff00">&nbsp;89 </font>DEF SCORE_TITLE = <font color="#ff6060">0</font><br>
+<font color="#ffff00">&nbsp;90 </font>DEF SCORE_B = <font color="#ff6060">1</font><br>
+<font color="#ffff00">&nbsp;91 </font>DEF SCORE_H1 = <font color="#ff6060">2</font><br>
+<font color="#ffff00">&nbsp;92 </font>DEF SCORE_A = <font color="#ff6060">5</font><br>
+<font color="#ffff00">&nbsp;93 </font>DEF SCORE_CONTENT = <font color="#ff6060">6</font><br>
+<font color="#ffff00">&nbsp;94 </font><br>
+<font color="#ffff00">&nbsp;95 </font><font color="#ffff00">cdef</font>&nbsp;inline <font color="#00ff00">float</font>&nbsp;sc(<font color="#00ff00">int</font>&nbsp;score):<br>
+<font color="#ffff00">&nbsp;96 </font><br>
+<font color="#ffff00">&nbsp;97 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">&nbsp;98 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;计算权值</font><br>
+<font color="#ffff00">&nbsp;99 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">100 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;score == SCORE_TITLE:<br>
+<font color="#ffff00">101 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font>&nbsp;<font color="#ff6060">5</font><br>
+<font color="#ffff00">102 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">elif</font>&nbsp;score ==SCORE_B:<br>
+<font color="#ffff00">103 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font>&nbsp;<font color="#ff6060">2.5</font><br>
+<font color="#ffff00">104 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">elif</font>&nbsp;score &gt;= SCORE_H1 <font color="#ffff00">and</font>&nbsp;score &lt;= SCORE_H1 + <font color="#ff6060">2</font>:<br>
+<font color="#ffff00">105 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font>&nbsp;<font color="#ff6060">2.5</font><br>
+<font color="#ffff00">106 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">elif</font>&nbsp;score == SCORE_A:<br>
+<font color="#ffff00">107 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font>&nbsp;<font color="#ff6060">1</font><br>
+<font color="#ffff00">108 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">elif</font>&nbsp;score == SCORE_CONTENT:<br>
+<font color="#ffff00">109 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font>&nbsp;<font color="#ff6060">2</font><br>
+<font color="#ffff00">110 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font>&nbsp;<font color="#ff6060">0</font><br>
+<font color="#ffff00">111 </font>&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">112 </font><br>
+<font color="#ffff00">113 </font><br>
+<font color="#ffff00">114 </font><font color="#ffff00">cdef</font>&nbsp;<font color="#ffff00">class</font>&nbsp;<font color="#00ffff">Whit_list</font>:<br>
+<font color="#ffff00">115 </font><br>
+<font color="#ffff00">116 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">117 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;whit list</font><br>
+<font color="#ffff00">118 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;管理程序</font><br>
+<font color="#ffff00">119 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">120 </font><br>
+<font color="#ffff00">121 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;WhitList *hit_list<br>
+<font color="#ffff00">122 </font><br>
+<font color="#ffff00">123 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#扫描时 索引</font><br>
+<font color="#ffff00">124 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">int</font>&nbsp;scan_id <br>
+<font color="#ffff00">125 </font><br>
+<font color="#ffff00">126 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#公用 wid</font><br>
+<font color="#ffff00">127 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">int</font>&nbsp;wid<br>
+<font color="#ffff00">128 </font><br>
+<font color="#ffff00">129 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">def</font>&nbsp;<font color="#00ffff">__cinit__</font>(self):<br>
+<font color="#ffff00">130 </font><br>
+<font color="#ffff00">131 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">132 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;init</font><br>
+<font color="#ffff00">133 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">134 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.scan_id = <font color="#ff6060">0</font><br>
+<font color="#ffff00">135 </font>&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">136 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">137 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;init(self,WhitList *whit_list,<font color="#00ff00">int</font>&nbsp;wid):<br>
+<font color="#ffff00">138 </font><br>
+<font color="#ffff00">139 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">140 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;c语言层面的init</font><br>
+<font color="#ffff00">141 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">142 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#引用方式传递 直接修改直</font><br>
+<font color="#ffff00">143 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list = whit_list<br>
+<font color="#ffff00">144 </font><br>
+<font color="#ffff00">145 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.wid = wid<br>
+<font color="#ffff00">146 </font><br>
+<font color="#ffff00">147 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#若whit_list　内存未分配</font><br>
+<font color="#ffff00">148 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#则进行分配 </font><br>
+<font color="#ffff00">149 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;self.hit_list.whit == NULL:<br>
+<font color="#ffff00">150 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;<font color="#ff6060">'the whit_list is empty'</font><br>
+<font color="#ffff00">151 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;<font color="#ff6060">'begin to malloc'</font><br>
+<font color="#ffff00">152 </font><br>
+<font color="#ffff00">153 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.whit = &lt;Whit *&gt;malloc( Whit_init_num * <font color="#ffff00">sizeof</font>(Whit) )<br>
+<font color="#ffff00">154 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.top = -<font color="#ff6060">1</font><br>
+<font color="#ffff00">155 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.length = Whit_init_num<br>
+<font color="#ffff00">156 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.empty = <font color="#ff6060">0</font>&nbsp;<font color="#8080ff">#初始时无效记录数目为0 </font><br>
+<font color="#ffff00">157 </font><br>
+<font color="#ffff00">158 </font><br>
+<font color="#ffff00">159 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;show(self):<br>
+<font color="#ffff00">160 </font><br>
+<font color="#ffff00">161 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">162 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;展示结果</font><br>
+<font color="#ffff00">163 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">164 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font><font color="#ff6060">'+ whit_list -show begin to show the hitlist'</font><br>
+<font color="#ffff00">165 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>:<br>
+<font color="#ffff00">166 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;i<br>
+<font color="#ffff00">167 </font><br>
+<font color="#ffff00">168 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">for</font>&nbsp;i <font color="#ffff00">in</font>&nbsp;<font color="#00ffff">range</font>(self.hit_list.top+<font color="#ff6060">1</font>):<br>
+<font color="#ffff00">169 </font><br>
+<font color="#ffff00">170 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;self.hit_list.whit[i].docID,self.hit_list.whit[i].rank<br>
+<font color="#ffff00">171 </font><br>
+<font color="#ffff00">172 </font><br>
+<font color="#ffff00">173 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">void</font>&nbsp;&nbsp;append(self, Hit hit):<br>
+<font color="#ffff00">174 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">175 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">176 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;append </font><br>
+<font color="#ffff00">177 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在初始化wlist时候使用</font><br>
+<font color="#ffff00">178 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;将 hit_list 自动加入到 whit_list中</font><br>
+<font color="#ffff00">179 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">180 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;Whit *base<br>
+<font color="#ffff00">181 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>:<br>
+<font color="#ffff00">182 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;i<br>
+<font color="#ffff00">183 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">184 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.top += <font color="#ff6060">1</font><br>
+<font color="#ffff00">185 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.whit[self.hit_list.top].docID = hit.docID<br>
+<font color="#ffff00">186 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.whit[self.hit_list.top].pos = hit.pos<br>
+<font color="#ffff00">187 </font><br>
+<font color="#ffff00">188 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#计算权质</font><br>
+<font color="#ffff00">189 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#初始化时&nbsp;&nbsp;直接赋值</font><br>
+<font color="#ffff00">190 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;<font color="#ff6060">'+whit_list - append'</font>,self.hit_list.top,self.hit_list.whit[self.hit_list.top].docID<br>
+<font color="#ffff00">191 </font><br>
+<font color="#ffff00">192 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.whit[self.top].rank = sc(hit.score)<font color="#8080ff"># * SCORE_EACH&nbsp;&nbsp;&nbsp;&nbsp;</font><br>
+<font color="#ffff00">193 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">194 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;self.hit_list.top &gt; self.hit_list.length - <font color="#ff6060">2</font>:<br>
+<font color="#ffff00">195 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#重新分配</font><br>
+<font color="#ffff00">196 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;base = &lt;Whit *&gt; realloc( self.hit_list.whit , <font color="#ffff00">sizeof</font>(Whit) * (self.hit_list.length + Whit_add) )<br>
+<font color="#ffff00">197 </font><br>
+<font color="#ffff00">198 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;base != NULL:<br>
+<font color="#ffff00">199 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.whit = base<br>
+<font color="#ffff00">200 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.length += Whit_add<br>
+<font color="#ffff00">201 </font><br>
+<font color="#ffff00">202 </font><br>
+<font color="#ffff00">203 </font><br>
+<font color="#ffff00">204 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">short</font>&nbsp;add(self,Hit hit):<br>
+<font color="#ffff00">205 </font><br>
+<font color="#ffff00">206 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">207 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;将剩余词汇添加到总hit_list记录中</font><br>
+<font color="#ffff00">208 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;包括判断</font><br>
+<font color="#ffff00">209 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;主程序 将所有单独docID载入其中</font><br>
+<font color="#ffff00">210 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;add 将会自动过滤和判断</font><br>
+<font color="#ffff00">211 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;如果外部docID不统一 将rank指为-1</font><br>
+<font color="#ffff00">212 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;表明此记录作废</font><br>
+<font color="#ffff00">213 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font>&nbsp;<br>
+<font color="#ffff00">214 </font><br>
+<font color="#ffff00">215 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#采用渐次扫描算法</font><br>
+<font color="#ffff00">216 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#外界逐次扫描</font><br>
+<font color="#ffff00">217 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#同时内部也逐步扫描</font><br>
+<font color="#ffff00">218 </font>&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">219 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;<font color="#ff6060">'+whit_list -add'</font><br>
+<font color="#ffff00">220 </font><br>
+<font color="#ffff00">221 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>:<br>
+<font color="#ffff00">222 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;j<br>
+<font color="#ffff00">223 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;cur_did<br>
+<font color="#ffff00">224 </font><br>
+<font color="#ffff00">225 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#去除无用记录 </font><br>
+<font color="#ffff00">226 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">while</font>&nbsp;self.hit_list.whit[self.scan_id].rank ==-<font color="#ff6060">1</font>&nbsp;<font color="#ffff00">and</font>&nbsp;self.scan_id &lt;= self.hit_list.top:<br>
+<font color="#ffff00">227 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#过滤无用记录　rank==-1</font><br>
+<font color="#ffff00">228 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.scan_id += <font color="#ff6060">1</font><br>
+<font color="#ffff00">229 </font><br>
+<font color="#ffff00">230 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#一直到最后都是 -1</font><br>
+<font color="#ffff00">231 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;self.scan_id &gt; self.hit_list.top:<br>
+<font color="#ffff00">232 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font>&nbsp;<font color="#ff6060">2</font><br>
+<font color="#ffff00">233 </font><br>
+<font color="#ffff00">234 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cur_did = self.hit_list.whit[self.scan_id].docID<br>
+<font color="#ffff00">235 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">236 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#首次某种</font><br>
+<font color="#ffff00">237 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;hit.docID &gt; self.hit_list.whit[self.hit_list.top].docID:<br>
+<font color="#ffff00">238 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#docID超过内部最大限度</font><br>
+<font color="#ffff00">239 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#不需要继续扫描下去</font><br>
+<font color="#ffff00">240 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font>&nbsp;<font color="#ff6060">2</font>&nbsp;&nbsp;<br>
+<font color="#ffff00">241 </font><br>
+<font color="#ffff00">242 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;hit.docID == cur_did:<br>
+<font color="#ffff00">243 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.whit[self.scan_id].rank += sc(hit.score)<font color="#8080ff"># * SCORE_ADD</font><br>
+<font color="#ffff00">244 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.scan_id += <font color="#ff6060">1</font><br>
+<font color="#ffff00">245 </font><br>
+<font color="#ffff00">246 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font>&nbsp;<font color="#ff6060">0</font><br>
+<font color="#ffff00">247 </font><br>
+<font color="#ffff00">248 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">elif</font>&nbsp;hit.docID &gt; cur_did:<br>
+<font color="#ffff00">249 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#外围已经超过　说明当前记录未命中</font><br>
+<font color="#ffff00">250 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.whit[self.scan_id].rank = -<font color="#ff6060">1</font><br>
+<font color="#ffff00">251 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#无效记录数目 + 1</font><br>
+<font color="#ffff00">252 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.empty += <font color="#ff6060">1</font><br>
+<font color="#ffff00">253 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.scan_id += <font color="#ff6060">1</font><br>
+<font color="#ffff00">254 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#内部 scan_id 过小</font><br>
+<font color="#ffff00">255 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font>&nbsp;<font color="#ff6060">1</font><br>
+<font color="#ffff00">256 </font><br>
+<font color="#ffff00">257 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">else</font>:<br>
+<font color="#ffff00">258 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#外界 scan_id 过小</font><br>
+<font color="#ffff00">259 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font>&nbsp;-<font color="#ff6060">1</font><br>
+<font color="#ffff00">260 </font><br>
+<font color="#ffff00">261 </font><br>
+<font color="#ffff00">262 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">void</font>&nbsp;init_scanID(self):<br>
+<font color="#ffff00">263 </font><br>
+<font color="#ffff00">264 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">265 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一轮扫描完毕</font><br>
+<font color="#ffff00">266 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.scan_id清０</font><br>
+<font color="#ffff00">267 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">268 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.scan_id = <font color="#ff6060">0</font><br>
+<font color="#ffff00">269 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">270 </font><br>
+<font color="#ffff00">271 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">272 </font><br>
+<font color="#ffff00">273 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br>
+<font color="#ffff00">274 </font><br>
+<font color="#ffff00">275 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">276 </font><br>
+<font color="#ffff00">277 </font><font color="#8080ff">################################</font><br>
+<font color="#ffff00">278 </font><font color="#8080ff">#</font><br>
+<font color="#ffff00">279 </font><font color="#8080ff">#&nbsp;&nbsp; 单个hit查找容器（包括doc)</font><br>
+<font color="#ffff00">280 </font><font color="#8080ff">#&nbsp;&nbsp; 返回查找到的docid</font><br>
+<font color="#ffff00">281 </font><font color="#8080ff">#&nbsp;&nbsp; 可以考虑多线程</font><br>
+<font color="#ffff00">282 </font><font color="#8080ff">#&nbsp;&nbsp; 得到结果回合到总数据容器中</font><br>
+<font color="#ffff00">283 </font><font color="#8080ff">#</font><br>
+<font color="#ffff00">284 </font><font color="#8080ff">################################</font><br>
+<font color="#ffff00">285 </font><br>
+<font color="#ffff00">286 </font><font color="#ffff00">cdef</font>&nbsp;<font color="#ffff00">class</font>&nbsp;<font color="#00ffff">Hit_find</font>:<br>
+<font color="#ffff00">287 </font><br>
+<font color="#ffff00">288 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">289 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;从hit中查取相应内容</font><br>
+<font color="#ffff00">290 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">291 </font><br>
+<font color="#ffff00">292 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#whit 存储目录</font><br>
+<font color="#ffff00">293 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">char</font>&nbsp;*fdir<br>
+<font color="#ffff00">294 </font>&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">295 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#当前 hit文件(避免重复载入)</font><br>
+<font color="#ffff00">296 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">int</font>&nbsp;cur_hit_file<br>
+<font color="#ffff00">297 </font><br>
+<font color="#ffff00">298 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#内存中参考 hit 存储队列</font><br>
+<font color="#ffff00">299 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;Hit *hit_list<br>
+<font color="#ffff00">300 </font><br>
+<font color="#ffff00">301 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#hit 长度</font><br>
+<font color="#ffff00">302 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">int</font>&nbsp;length<br>
+<font color="#ffff00">303 </font><br>
+<font color="#ffff00">304 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#主程序公共查找结果操作池</font><br>
+<font color="#ffff00">305 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#whit_list 管理类</font><br>
+<font color="#ffff00">306 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;Whit_list whit_list<br>
+<font color="#ffff00">307 </font><br>
+<font color="#ffff00">308 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">object</font>&nbsp;hashIndex<br>
+<font color="#ffff00">309 </font><br>
+<font color="#ffff00">310 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#为了对公共池足够的控制</font><br>
+<font color="#ffff00">311 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#本地取一个索引</font><br>
+<font color="#ffff00">312 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;WhitList *wlist<br>
+<font color="#ffff00">313 </font><br>
+<font color="#ffff00">314 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#每个hit文件的长度</font><br>
+<font color="#ffff00">315 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">int</font>&nbsp;width[List_num]<br>
+<font color="#ffff00">316 </font><br>
+<font color="#ffff00">317 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#公用 wid</font><br>
+<font color="#ffff00">318 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">int</font>&nbsp;wid<br>
+<font color="#ffff00">319 </font><br>
+<font color="#ffff00">320 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#运行时相关变量</font><br>
+<font color="#ffff00">321 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>:<br>
+<font color="#ffff00">322 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#wid的边界</font><br>
+<font color="#ffff00">323 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;wleft_id<br>
+<font color="#ffff00">324 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;wright_id<br>
+<font color="#ffff00">325 </font><br>
+<font color="#ffff00">326 </font><br>
+<font color="#ffff00">327 </font><br>
+<font color="#ffff00">328 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">def</font>&nbsp;<font color="#00ffff">__cinit__</font>(self,<font color="#00ff00">char</font>&nbsp;*fdir,<font color="#00ff00">char</font>&nbsp;*width_ph):<br>
+<font color="#ffff00">329 </font><br>
+<font color="#ffff00">330 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">331 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;init</font><br>
+<font color="#ffff00">332 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hit_list: 父亲hit存储池</font><br>
+<font color="#ffff00">333 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">334 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#初始化hit地址</font><br>
+<font color="#ffff00">335 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.fdir=fdir<br>
+<font color="#ffff00">336 </font><br>
+<font color="#ffff00">337 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#初始化 hashIndex 便于判断 word该属于文件</font><br>
+<font color="#ffff00">338 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hashIndex = init_hashIndex(<font color="#ff6060">&quot;store/index_hash.b&quot;</font>,<font color="#ff6060">&quot;store/word_wide.txt&quot;</font>)<br>
+<font color="#ffff00">339 </font><br>
+<font color="#ffff00">340 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#初始化width</font><br>
+<font color="#ffff00">341 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;f = <font color="#00ffff">open</font>(width_ph)<br>
+<font color="#ffff00">342 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;c=f.read()<br>
+<font color="#ffff00">343 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;f.close()<br>
+<font color="#ffff00">344 </font><br>
+<font color="#ffff00">345 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">int</font>&nbsp;i=<font color="#ff6060">0</font><br>
+<font color="#ffff00">346 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#初始化 每个文件的 hit 数量记录</font><br>
+<font color="#ffff00">347 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">for</font>&nbsp;w <font color="#ffff00">in</font>&nbsp;c.split():<br>
+<font color="#ffff00">348 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.width[i]=<font color="#00ff00">int</font>(w) <br>
+<font color="#ffff00">349 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i+=<font color="#ff6060">1</font><br>
+<font color="#ffff00">350 </font><br>
+<font color="#ffff00">351 </font><br>
+<font color="#ffff00">352 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">void</font>&nbsp;init(self,WhitList *whit, <font color="#00ff00">int</font>&nbsp;wid):<br>
+<font color="#ffff00">353 </font><br>
+<font color="#ffff00">354 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">355 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;c语言层面的 init</font><br>
+<font color="#ffff00">356 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">357 </font><br>
+<font color="#ffff00">358 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.wid = wid<br>
+<font color="#ffff00">359 </font><br>
+<font color="#ffff00">360 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#初始化 whit 运行时内存池</font><br>
+<font color="#ffff00">361 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#直接与父whit相同</font><br>
+<font color="#ffff00">362 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#结构体能否协调一直　需要测试!!!!!!!!!!!?????????????????????</font><br>
+<font color="#ffff00">363 </font><br>
+<font color="#ffff00">364 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.whit_list = Whit_list()<br>
+<font color="#ffff00">365 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.whit_list.init(whit,wid)<br>
+<font color="#ffff00">366 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#为了对 公共池 取得足够的控制 </font><br>
+<font color="#ffff00">367 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#本地取得一个索引副本</font><br>
+<font color="#ffff00">368 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.wlist = whit<br>
+<font color="#ffff00">369 </font><br>
+<font color="#ffff00">370 </font><br>
+<font color="#ffff00">371 </font><br>
+<font color="#ffff00">372 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;init_hit_file(self,hashvalue):<br>
+<font color="#ffff00">373 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">374 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;通过 hashvalue 确定并且载入相应的hit文件内容</font><br>
+<font color="#ffff00">375 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">376 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">int</font>&nbsp;index = self.hashIndex.pos(hashvalue)<br>
+<font color="#ffff00">377 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">char</font>&nbsp;*fn<br>
+<font color="#ffff00">378 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;FILE *fp<br>
+<font color="#ffff00">379 </font><br>
+<font color="#ffff00">380 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#如果为同一个范围内word</font><br>
+<font color="#ffff00">381 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#不进行处理</font><br>
+<font color="#ffff00">382 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;index == self.cur_hit_file:<br>
+<font color="#ffff00">383 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">pass</font><br>
+<font color="#ffff00">384 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">385 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">else</font>:<br>
+<font color="#ffff00">386 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#载入新的文件内容</font><br>
+<font color="#ffff00">387 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ind=<font color="#00ffff">str</font>(index) <br>
+<font color="#ffff00">388 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>(self.hit_list != NULL):<br>
+<font color="#ffff00">389 </font><br>
+<font color="#ffff00">390 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;free(self.hit_list)<br>
+<font color="#ffff00">391 </font><br>
+<font color="#ffff00">392 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#内存中单个hit文件</font><br>
+<font color="#ffff00">393 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#分配内存</font><br>
+<font color="#ffff00">394 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list=&lt;Hit *&gt;malloc(<font color="#ffff00">sizeof</font>(Hit) * self.width[index])<br>
+<font color="#ffff00">395 </font><br>
+<font color="#ffff00">396 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#读入数据</font><br>
+<font color="#ffff00">397 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;<font color="#ff6060">'begin read the file'</font><br>
+<font color="#ffff00">398 </font><br>
+<font color="#ffff00">399 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#fname = self.fdir +ind +'.hit'</font><br>
+<font color="#ffff00">400 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fname = <font color="#ff6060">'store/hits/'</font>&nbsp;+ ind + <font color="#ff6060">'.hit'</font><br>
+<font color="#ffff00">401 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">402 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fn = fname<br>
+<font color="#ffff00">403 </font><br>
+<font color="#ffff00">404 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;<font color="#ff6060">'the fname is'</font>,fn<br>
+<font color="#ffff00">405 </font><br>
+<font color="#ffff00">406 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fp=&lt;FILE *&gt;fopen(fn,<font color="#ff6060">&quot;rb&quot;</font>)<br>
+<font color="#ffff00">407 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fread(self.hit_list , <font color="#ffff00">sizeof</font>(Hit), self.width[index] ,fp)<br>
+<font color="#ffff00">408 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fclose(fp)<br>
+<font color="#ffff00">409 </font><br>
+<font color="#ffff00">410 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#负值hit_list长度</font><br>
+<font color="#ffff00">411 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.length = self.width[index]<br>
+<font color="#ffff00">412 </font><br>
+<font color="#ffff00">413 </font><br>
+<font color="#ffff00">414 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;inline <font color="#00ff00">short</font>&nbsp;pos_mid_wid(self):<br>
+<font color="#ffff00">415 </font><br>
+<font color="#ffff00">416 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">417 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;利用二分发确定wid的大概位置</font><br>
+<font color="#ffff00">418 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">419 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.wleft_id=<font color="#ff6060">0</font>&nbsp;<font color="#8080ff">#??????????????</font><br>
+<font color="#ffff00">420 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.wright_id=<font color="#ff6060">0</font><br>
+<font color="#ffff00">421 </font><br>
+<font color="#ffff00">422 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>:<br>
+<font color="#ffff00">423 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;fir<br>
+<font color="#ffff00">424 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;mid<br>
+<font color="#ffff00">425 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;end<br>
+<font color="#ffff00">426 </font><br>
+<font color="#ffff00">427 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fir = <font color="#ff6060">0</font><br>
+<font color="#ffff00">428 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mid = <font color="#ff6060">0</font><br>
+<font color="#ffff00">429 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end = self.length-<font color="#ff6060">1</font><br>
+<font color="#ffff00">430 </font><br>
+<font color="#ffff00">431 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">while</font>&nbsp;fir&lt;end:<br>
+<font color="#ffff00">432 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mid = (fir+end)/<font color="#ff6060">2</font><br>
+<font color="#ffff00">433 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;self.wid &gt; self.hit_list[mid].wordID:<br>
+<font color="#ffff00">434 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fir = mid+<font color="#ff6060">1</font><br>
+<font color="#ffff00">435 </font><br>
+<font color="#ffff00">436 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">elif</font>&nbsp;self.wid &lt; self.hit_list[mid].wordID:<br>
+<font color="#ffff00">437 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end = mid-<font color="#ff6060">1</font><br>
+<font color="#ffff00">438 </font><br>
+<font color="#ffff00">439 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">else</font>:<br>
+<font color="#ffff00">440 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">break</font><br>
+<font color="#ffff00">441 </font><br>
+<font color="#ffff00">442 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;fir == end:<br>
+<font color="#ffff00">443 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;self.hit_list[fir].wordID != self.wid:<br>
+<font color="#ffff00">444 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#wid在文件中不存在</font><br>
+<font color="#ffff00">445 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font>&nbsp;<font color="#ff6060">0</font><br>
+<font color="#ffff00">446 </font><br>
+<font color="#ffff00">447 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">else</font>:<br>
+<font color="#ffff00">448 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font>&nbsp;mid<br>
+<font color="#ffff00">449 </font><br>
+<font color="#ffff00">450 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">elif</font>&nbsp;fir&gt;end:<br>
+<font color="#ffff00">451 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font>&nbsp;<font color="#ff6060">0</font><br>
+<font color="#ffff00">452 </font><br>
+<font color="#ffff00">453 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">else</font>:<br>
+<font color="#ffff00">454 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font>&nbsp;mid<br>
+<font color="#ffff00">455 </font><br>
+<font color="#ffff00">456 </font><br>
+<font color="#ffff00">457 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">void</font>&nbsp;pos_wid_scope(self):<br>
+<font color="#ffff00">458 </font><br>
+<font color="#ffff00">459 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">460 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;确定wid在hit列表中范围</font><br>
+<font color="#ffff00">461 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;需要另外的wid的hash表支持</font><br>
+<font color="#ffff00">462 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">463 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>:<br>
+<font color="#ffff00">464 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;i<br>
+<font color="#ffff00">465 </font><br>
+<font color="#ffff00">466 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i=self.pos_mid_wid()<br>
+<font color="#ffff00">467 </font><br>
+<font color="#ffff00">468 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">while</font>&nbsp;i&gt;=<font color="#ff6060">0</font>:<br>
+<font color="#ffff00">469 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;self.hit_list[i].wordID == self.wid:<br>
+<font color="#ffff00">470 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i -= <font color="#ff6060">1</font><br>
+<font color="#ffff00">471 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">else</font>:<br>
+<font color="#ffff00">472 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">break</font><br>
+<font color="#ffff00">473 </font><br>
+<font color="#ffff00">474 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.wleft_id = i+<font color="#ff6060">1</font><br>
+<font color="#ffff00">475 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">476 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">while</font>&nbsp;i&lt;=self.length-<font color="#ff6060">1</font>:<br>
+<font color="#ffff00">477 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;self.hit_list[i].wordID == self.wid:<br>
+<font color="#ffff00">478 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i += <font color="#ff6060">1</font><br>
+<font color="#ffff00">479 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">else</font>:<br>
+<font color="#ffff00">480 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">break</font><br>
+<font color="#ffff00">481 </font><br>
+<font color="#ffff00">482 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.wright_id = i-<font color="#ff6060">1</font><br>
+<font color="#ffff00">483 </font><br>
+<font color="#ffff00">484 </font><br>
+<font color="#ffff00">485 </font><br>
+<font color="#ffff00">486 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">void</font>&nbsp;init_whit_list(self):<br>
+<font color="#ffff00">487 </font><br>
+<font color="#ffff00">488 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">489 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;从第一个词开始</font><br>
+<font color="#ffff00">490 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;首次初始化whit空间</font><br>
+<font color="#ffff00">491 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;以后的词均在此空间内进行过滤便可</font><br>
+<font color="#ffff00">492 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">493 </font><br>
+<font color="#ffff00">494 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>:<br>
+<font color="#ffff00">495 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#当前搜索的did</font><br>
+<font color="#ffff00">496 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#只第一个did有效</font><br>
+<font color="#ffff00">497 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;cur_did<br>
+<font color="#ffff00">498 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;i&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <font color="#8080ff">#hit_list的index</font><br>
+<font color="#ffff00">499 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;j&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <font color="#8080ff">#whit_list的index</font><br>
+<font color="#ffff00">500 </font><br>
+<font color="#ffff00">501 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#确定wid边界</font><br>
+<font color="#ffff00">502 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#self.pos_wid_scope()</font><br>
+<font color="#ffff00">503 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#初始时 cur_did 故意不同</font><br>
+<font color="#ffff00">504 </font><br>
+<font color="#ffff00">505 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cur_did = self.hit_list[self.wleft_id].docID - <font color="#ff6060">1</font><br>
+<font color="#ffff00">506 </font><br>
+<font color="#ffff00">507 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i=self.wleft_id<br>
+<font color="#ffff00">508 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#初始化第一个did</font><br>
+<font color="#ffff00">509 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">while</font>&nbsp;i&lt;=self.wright_id:<br>
+<font color="#ffff00">510 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#扫描整个　wid　字段</font><br>
+<font color="#ffff00">511 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;self.hit_list[i].docID == cur_did:<br>
+<font color="#ffff00">512 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">pass</font><br>
+<font color="#ffff00">513 </font><br>
+<font color="#ffff00">514 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">else</font>:<br>
+<font color="#ffff00">515 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.whit_list.append(self.hit_list[i])<br>
+<font color="#ffff00">516 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cur_did = self.hit_list[i].docID<br>
+<font color="#ffff00">517 </font><br>
+<font color="#ffff00">518 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i+=<font color="#ff6060">1</font><br>
+<font color="#ffff00">519 </font><br>
+<font color="#ffff00">520 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.whit_list.show()<br>
+<font color="#ffff00">521 </font><br>
+<font color="#ffff00">522 </font>&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">523 </font>&nbsp;&nbsp;&nbsp;&nbsp; <br>
+<font color="#ffff00">524 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">void</font>&nbsp;find(self,<font color="#00ff00">char</font>&nbsp;*word):<br>
+<font color="#ffff00">525 </font><br>
+<font color="#ffff00">526 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">527 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;查找词主程序</font><br>
+<font color="#ffff00">528 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在 init_whit_list 完成后</font><br>
+<font color="#ffff00">529 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;默认　已经存在一个word记录</font><br>
+<font color="#ffff00">530 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">531 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>:<br>
+<font color="#ffff00">532 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">double</font>&nbsp;hashvalue<br>
+<font color="#ffff00">533 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;hash_file_id<br>
+<font color="#ffff00">534 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#特定wid的起始坐标</font><br>
+<font color="#ffff00">535 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#需要 wid hash表的支持</font><br>
+<font color="#ffff00">536 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;widstart<br>
+<font color="#ffff00">537 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;widend<br>
+<font color="#ffff00">538 </font><br>
+<font color="#ffff00">539 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hashvalue = <font color="#00ffff">hash</font>(word)<br>
+<font color="#ffff00">540 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#初始化 hit 文件队列</font><br>
+<font color="#ffff00">541 </font><br>
+<font color="#ffff00">542 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#hash_file_id = self.pos_word_file(hashvalue)</font><br>
+<font color="#ffff00">543 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#刷新内存</font><br>
+<font color="#ffff00">544 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.init_hit_file(hashvalue)<br>
+<font color="#ffff00">545 </font><br>
+<font color="#ffff00">546 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#确定wid对应字段范围</font><br>
+<font color="#ffff00">547 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#此处需要确定　wid</font><br>
+<font color="#ffff00">548 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.pos_wid_scope()<br>
+<font color="#ffff00">549 </font><br>
+<font color="#ffff00">550 </font><br>
+<font color="#ffff00">551 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#自动初始化</font><br>
+<font color="#ffff00">552 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#wlist 为本地取得的 whit_list 的一个副本</font><br>
+<font color="#ffff00">553 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#标志为 self.whit_list.top==-1</font><br>
+<font color="#ffff00">554 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;self.wlist.top == -<font color="#ff6060">1</font>:<br>
+<font color="#ffff00">555 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#此处需要确定　wid !!!!?????????????????????</font><br>
+<font color="#ffff00">556 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.init_whit_list()<br>
+<font color="#ffff00">557 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font><br>
+<font color="#ffff00">558 </font><br>
+<font color="#ffff00">559 </font><br>
+<font color="#ffff00">560 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#开始遍历 对did进行处理</font><br>
+<font color="#ffff00">561 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>:<br>
+<font color="#ffff00">562 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;i<br>
+<font color="#ffff00">563 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;cur_did<br>
+<font color="#ffff00">564 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;res<br>
+<font color="#ffff00">565 </font><br>
+<font color="#ffff00">566 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#?????????????????????????????????????</font><br>
+<font color="#ffff00">567 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i=self.wleft_id<br>
+<font color="#ffff00">568 </font><br>
+<font color="#ffff00">569 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#为了对第一个hit_list进行处理</font><br>
+<font color="#ffff00">570 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#估计改变cur_did</font><br>
+<font color="#ffff00">571 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cur_did=self.hit_list[i].docID - <font color="#ff6060">1</font><br>
+<font color="#ffff00">572 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br>
+<font color="#ffff00">573 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">while</font>&nbsp;i &lt;= self.wright_id:<br>
+<font color="#ffff00">574 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#在wid内进行遍历</font><br>
+<font color="#ffff00">575 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;self.hit_list[i].docID == cur_did:<br>
+<font color="#ffff00">576 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">pass</font><br>
+<font color="#ffff00">577 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">else</font>:<br>
+<font color="#ffff00">578 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;res = self.whit_list.add(self.hit_list[i])<br>
+<font color="#ffff00">579 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cur_did = self.hit_list[i].docID<br>
+<font color="#ffff00">580 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">581 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;res == <font color="#ff6060">2</font>:<br>
+<font color="#ffff00">582 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#查找外围范围溢出</font><br>
+<font color="#ffff00">583 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">break</font><br>
+<font color="#ffff00">584 </font><br>
+<font color="#ffff00">585 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i+=<font color="#ff6060">1</font><br>
+<font color="#ffff00">586 </font>&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">587 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#whit_list 的 scanID 清 0</font><br>
+<font color="#ffff00">588 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.whit_list.init_scanID()<br>
+<font color="#ffff00">589 </font><br>
+<font color="#ffff00">590 </font><br>
+<font color="#ffff00">591 </font><font color="#8080ff">###############################</font><br>
+<font color="#ffff00">592 </font><font color="#8080ff">#</font><br>
+<font color="#ffff00">593 </font><font color="#8080ff">#&nbsp;&nbsp; RankSorter</font><br>
+<font color="#ffff00">594 </font><font color="#8080ff">#&nbsp;&nbsp;&nbsp;&nbsp; 最终权值排序 </font><br>
+<font color="#ffff00">595 </font><font color="#8080ff">#</font><br>
+<font color="#ffff00">596 </font><font color="#8080ff">##############################</font><br>
+<font color="#ffff00">597 </font><font color="#ffff00">cdef</font>&nbsp;<font color="#ffff00">class</font>&nbsp;<font color="#00ffff">RankSorter</font>:<br>
+<font color="#ffff00">598 </font><br>
+<font color="#ffff00">599 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">600 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;进行排序&nbsp;&nbsp;使用cython进行优化</font><br>
+<font color="#ffff00">601 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">602 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;Whit *dali<br>
+<font color="#ffff00">603 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">int</font>&nbsp;length<br>
+<font color="#ffff00">604 </font>&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">605 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;init(self,Pack_res datalist):<br>
+<font color="#ffff00">606 </font><br>
+<font color="#ffff00">607 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">608 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;init</font><br>
+<font color="#ffff00">609 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">610 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.dali=datalist.whit<br>
+<font color="#ffff00">611 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.length=datalist.length<br>
+<font color="#ffff00">612 </font><br>
+<font color="#ffff00">613 </font><br>
+<font color="#ffff00">614 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">float</font>&nbsp;gvalue(self,Whit data):<br>
+<font color="#ffff00">615 </font><br>
+<font color="#ffff00">616 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">617 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;返回需要进行比较的值</font><br>
+<font color="#ffff00">618 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">619 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font>&nbsp;data.rank<br>
+<font color="#ffff00">620 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">621 </font><br>
+<font color="#ffff00">622 </font><br>
+<font color="#ffff00">623 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">def</font>&nbsp;<font color="#00ffff">quicksort</font>(self,<font color="#00ff00">int</font>&nbsp;p,<font color="#00ff00">int</font>&nbsp;q):<br>
+<font color="#ffff00">624 </font><br>
+<font color="#ffff00">625 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">int</font>&nbsp;j<br>
+<font color="#ffff00">626 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st=[]<br>
+<font color="#ffff00">627 </font><br>
+<font color="#ffff00">628 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">while</font>&nbsp;<font color="#00ffff">True</font>:<br>
+<font color="#ffff00">629 </font><br>
+<font color="#ffff00">630 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">while</font>&nbsp;p&lt;q:<br>
+<font color="#ffff00">631 </font><br>
+<font color="#ffff00">632 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;j=self.partition(p,q)<br>
+<font color="#ffff00">633 </font><br>
+<font color="#ffff00">634 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;(j-p)&lt;(q-j):<br>
+<font color="#ffff00">635 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st.append(j+<font color="#ff6060">1</font>)<br>
+<font color="#ffff00">636 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st.append(q)<br>
+<font color="#ffff00">637 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;q=j-<font color="#ff6060">1</font><br>
+<font color="#ffff00">638 </font><br>
+<font color="#ffff00">639 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">else</font>:<br>
+<font color="#ffff00">640 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st.append(p)<br>
+<font color="#ffff00">641 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st.append(j-<font color="#ff6060">1</font>)<br>
+<font color="#ffff00">642 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;p=j+<font color="#ff6060">1</font><br>
+<font color="#ffff00">643 </font><br>
+<font color="#ffff00">644 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>(<font color="#00ffff">len</font>(st)==<font color="#ff6060">0</font>):<br>
+<font color="#ffff00">645 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font><br>
+<font color="#ffff00">646 </font><br>
+<font color="#ffff00">647 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;q=st.pop()<br>
+<font color="#ffff00">648 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;p=st.pop()<br>
+<font color="#ffff00">649 </font><br>
+<font color="#ffff00">650 </font><br>
+<font color="#ffff00">651 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">int</font>&nbsp;partition(self,<font color="#00ff00">int</font>&nbsp;low,<font color="#00ff00">int</font>&nbsp;high):<br>
+<font color="#ffff00">652 </font><br>
+<font color="#ffff00">653 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v=self.dali[low]<br>
+<font color="#ffff00">654 </font><br>
+<font color="#ffff00">655 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">while</font>&nbsp;low&lt;high:<br>
+<font color="#ffff00">656 </font><br>
+<font color="#ffff00">657 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">while</font>&nbsp;low&lt;high <font color="#ffff00">and</font>&nbsp;self.gvalue( self.dali[high] ) &gt;= self.gvalue( v ):<br>
+<font color="#ffff00">658 </font><br>
+<font color="#ffff00">659 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;high-=<font color="#ff6060">1</font><br>
+<font color="#ffff00">660 </font><br>
+<font color="#ffff00">661 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.dali[low]=self.dali[high]<br>
+<font color="#ffff00">662 </font><br>
+<font color="#ffff00">663 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">while</font>&nbsp;low&lt;high <font color="#ffff00">and</font>&nbsp;self.gvalue( self.dali[low] )&lt;=self.gvalue( v ):<br>
+<font color="#ffff00">664 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;low+=<font color="#ff6060">1</font><br>
+<font color="#ffff00">665 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.dali[high]=self.dali[low]<br>
+<font color="#ffff00">666 </font><br>
+<font color="#ffff00">667 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.dali[low]=v<br>
+<font color="#ffff00">668 </font><br>
+<font color="#ffff00">669 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font>&nbsp;low<br>
+<font color="#ffff00">670 </font><br>
+<font color="#ffff00">671 </font><br>
+<font color="#ffff00">672 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">void</font>&nbsp;run(self):<br>
+<font color="#ffff00">673 </font><br>
+<font color="#ffff00">674 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">675 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;运行主程序</font><br>
+<font color="#ffff00">676 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">677 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.quicksort(<font color="#ff6060">0</font>,self.length-<font color="#ff6060">1</font>)<br>
+<font color="#ffff00">678 </font><br>
+<font color="#ffff00">679 </font><br>
+<font color="#ffff00">680 </font><br>
+<font color="#ffff00">681 </font><br>
+<font color="#ffff00">682 </font><br>
+<font color="#ffff00">683 </font><br>
+<font color="#ffff00">684 </font><font color="#8080ff">###############################</font><br>
+<font color="#ffff00">685 </font><font color="#8080ff">#</font><br>
+<font color="#ffff00">686 </font><font color="#8080ff">#&nbsp;&nbsp;需要 初始化一块 wordid hash表</font><br>
+<font color="#ffff00">687 </font><font color="#8080ff">#</font><br>
+<font color="#ffff00">688 </font><font color="#8080ff">###############################</font><br>
+<font color="#ffff00">689 </font><br>
+<font color="#ffff00">690 </font><br>
+<font color="#ffff00">691 </font><font color="#ffff00">cdef</font>&nbsp;<font color="#ffff00">class</font>&nbsp;<font color="#00ffff">Query</font>:<br>
+<font color="#ffff00">692 </font><br>
+<font color="#ffff00">693 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">694 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;查询库</font><br>
+<font color="#ffff00">695 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;查询主程序</font><br>
+<font color="#ffff00">696 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;负责总的资源分配协调</font><br>
+<font color="#ffff00">697 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;输入一段 句子 返回 最终查询的 docID</font><br>
+<font color="#ffff00">698 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;并且进行排序</font><br>
+<font color="#ffff00">699 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;此为单线程</font><br>
+<font color="#ffff00">700 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">701 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#动态查找队列</font><br>
+<font color="#ffff00">702 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;WhitList hit_list<br>
+<font color="#ffff00">703 </font><br>
+<font color="#ffff00">704 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#whit 长度</font><br>
+<font color="#ffff00">705 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;length<br>
+<font color="#ffff00">706 </font><br>
+<font color="#ffff00">707 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#需要查找的词组</font><br>
+<font color="#ffff00">708 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">object</font>&nbsp;words<br>
+<font color="#ffff00">709 </font><br>
+<font color="#ffff00">710 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#动态查找容器</font><br>
+<font color="#ffff00">711 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;Hit_find hit_find<br>
+<font color="#ffff00">712 </font><br>
+<font color="#ffff00">713 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#整理过的结果</font><br>
+<font color="#ffff00">714 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;Pack_res pack_res<br>
+<font color="#ffff00">715 </font>&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">716 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#排序库</font><br>
+<font color="#ffff00">717 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;RankSorter rank_sort<br>
+<font color="#ffff00">718 </font><br>
+<font color="#ffff00">719 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#词库</font><br>
+<font color="#ffff00">720 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">object</font>&nbsp;thes<br>
+<font color="#ffff00">721 </font><br>
+<font color="#ffff00">722 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">object</font>&nbsp;ict<br>
+<font color="#ffff00">723 </font><br>
+<font color="#ffff00">724 </font><br>
+<font color="#ffff00">725 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">def</font>&nbsp;<font color="#00ffff">__cinit__</font>(self,<font color="#00ff00">char</font>&nbsp;*fdir,<font color="#00ff00">char</font>&nbsp;*width_ph):<br>
+<font color="#ffff00">726 </font><br>
+<font color="#ffff00">727 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">728 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;init </font><br>
+<font color="#ffff00">729 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;词库</font><br>
+<font color="#ffff00">730 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;索引库</font><br>
+<font color="#ffff00">731 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">732 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.words = []<br>
+<font color="#ffff00">733 </font><br>
+<font color="#ffff00">734 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.ict=Ictclas(<font color="#ff6060">'ICTCLAS50/'</font>) <br>
+<font color="#ffff00">735 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#初始化动态查找池</font><br>
+<font color="#ffff00">736 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#此处传递结构需要注意 !!!!!!!!!!!!&nbsp;&nbsp;????????????????????</font><br>
+<font color="#ffff00">737 </font><br>
+<font color="#ffff00">738 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#词库</font><br>
+<font color="#ffff00">739 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.thes=Init_thesaurus(<font color="#ff6060">'store/wordBar'</font>)<br>
+<font color="#ffff00">740 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">741 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#初始化 hit_find</font><br>
+<font color="#ffff00">742 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_find = Hit_find( fdir, width_ph)<br>
+<font color="#ffff00">743 </font><br>
+<font color="#ffff00">744 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#排序库</font><br>
+<font color="#ffff00">745 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.rank_sort=RankSorter()<br>
+<font color="#ffff00">746 </font><br>
+<font color="#ffff00">747 </font><br>
+<font color="#ffff00">748 </font><br>
+<font color="#ffff00">749 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">void</font>&nbsp;word_split(self,<font color="#00ff00">char</font>&nbsp;*paragh):<br>
+<font color="#ffff00">750 </font><br>
+<font color="#ffff00">751 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">752 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;将传入的句子进行分词</font><br>
+<font color="#ffff00">753 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">754 </font><br>
+<font color="#ffff00">755 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.words = self.ict.split(paragh).split()<br>
+<font color="#ffff00">756 </font><br>
+<font color="#ffff00">757 </font><br>
+<font color="#ffff00">758 </font><br>
+<font color="#ffff00">759 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">def</font>&nbsp;<font color="#00ffff">find_words</font>(self,<font color="#00ff00">char</font>&nbsp;*para):<br>
+<font color="#ffff00">760 </font><br>
+<font color="#ffff00">761 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">762 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;将词汇分词</font><br>
+<font color="#ffff00">763 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;并且进行插曲</font><br>
+<font color="#ffff00">764 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">765 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>:<br>
+<font color="#ffff00">766 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;wid<br>
+<font color="#ffff00">767 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">object</font>&nbsp;word<br>
+<font color="#ffff00">768 </font><br>
+<font color="#ffff00">769 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#对word进行分组</font><br>
+<font color="#ffff00">770 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">771 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;<font color="#ff6060">'begin to find words'</font>,<br>
+<font color="#ffff00">772 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;para<br>
+<font color="#ffff00">773 </font><br>
+<font color="#ffff00">774 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;cdt.detect(para)<br>
+<font color="#ffff00">775 </font><br>
+<font color="#ffff00">776 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.word_split(para)<br>
+<font color="#ffff00">777 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.group_words()<br>
+<font color="#ffff00">778 </font><br>
+<font color="#ffff00">779 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#对每个word进行处理</font><br>
+<font color="#ffff00">780 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">for</font>&nbsp;word <font color="#ffff00">in</font>&nbsp;self.words:<br>
+<font color="#ffff00">781 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#进行查取</font><br>
+<font color="#ffff00">782 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#同时自动收录value</font><br>
+<font color="#ffff00">783 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#hit_find会自动对父亲的hit存储池进行修改扩充</font><br>
+<font color="#ffff00">784 </font><br>
+<font color="#ffff00">785 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;<font color="#ff6060">'- to find'</font>,word<br>
+<font color="#ffff00">786 </font><br>
+<font color="#ffff00">787 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wid = self.thes.find(word)<br>
+<font color="#ffff00">788 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;<font color="#ff6060">'the wid is'</font>,wid<br>
+<font color="#ffff00">789 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">790 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#初始化 hit查找库</font><br>
+<font color="#ffff00">791 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;<font color="#ff6060">'- init hit_find'</font><br>
+<font color="#ffff00">792 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_find.init(&amp;self.hit_list,wid)<br>
+<font color="#ffff00">793 </font><br>
+<font color="#ffff00">794 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_find.find(word) <br>
+<font color="#ffff00">795 </font><br>
+<font color="#ffff00">796 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#查找完毕 开始后续处理</font><br>
+<font color="#ffff00">797 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#结果加工</font><br>
+<font color="#ffff00">798 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;<font color="#ff6060">'begin to pack res'</font><br>
+<font color="#ffff00">799 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.res_pack()<br>
+<font color="#ffff00">800 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#结果排序</font><br>
+<font color="#ffff00">801 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;<font color="#ff6060">'begin to sort res'</font><br>
+<font color="#ffff00">802 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.sort()<br>
+<font color="#ffff00">803 </font><br>
+<font color="#ffff00">804 </font><br>
+<font color="#ffff00">805 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;<font color="#00ff00">short</font>&nbsp;res_pack(self):<br>
+<font color="#ffff00">806 </font><br>
+<font color="#ffff00">807 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">808 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;将结果进行整理</font><br>
+<font color="#ffff00">809 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;去除无用记录</font><br>
+<font color="#ffff00">810 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;便于进行排序输出结果</font><br>
+<font color="#ffff00">811 </font><br>
+<font color="#ffff00">812 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;同时　将各个类清0 还原</font><br>
+<font color="#ffff00">813 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">814 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;self.hit_list.empty == self.hit_list.top+<font color="#ff6060">1</font>:<br>
+<font color="#ffff00">815 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#无有效结果</font><br>
+<font color="#ffff00">816 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font>&nbsp;-<font color="#ff6060">1</font><br>
+<font color="#ffff00">817 </font><br>
+<font color="#ffff00">818 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>:<br>
+<font color="#ffff00">819 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;length<br>
+<font color="#ffff00">820 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;i=<font color="#ff6060">0</font><br>
+<font color="#ffff00">821 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ff00">int</font>&nbsp;index=<font color="#ff6060">0</font><br>
+<font color="#ffff00">822 </font><br>
+<font color="#ffff00">823 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;length = self.hit_list.top+<font color="#ff6060">1</font>&nbsp;- self.hit_list.empty<br>
+<font color="#ffff00">824 </font><br>
+<font color="#ffff00">825 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.pack_res.whit = &lt;Whit *&gt; malloc (<font color="#ffff00">sizeof</font>(Whit) * length)<br>
+<font color="#ffff00">826 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.pack_res.length = length<br>
+<font color="#ffff00">827 </font><br>
+<font color="#ffff00">828 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">while</font>&nbsp;index &lt;= self.hit_list.top:<br>
+<font color="#ffff00">829 </font><br>
+<font color="#ffff00">830 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">if</font>&nbsp;self.hit_list.whit[index].rank &gt; -<font color="#ff6060">1</font>:<br>
+<font color="#ffff00">831 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.pack_res.whit[i] = self.hit_list.whit[index]<br>
+<font color="#ffff00">832 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i+=<font color="#ff6060">1</font><br>
+<font color="#ffff00">833 </font><br>
+<font color="#ffff00">834 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;index += <font color="#ff6060">1</font><br>
+<font color="#ffff00">835 </font><br>
+<font color="#ffff00">836 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">return</font>&nbsp;length<br>
+<font color="#ffff00">837 </font><br>
+<font color="#ffff00">838 </font><br>
+<font color="#ffff00">839 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;group_words(self):<br>
+<font color="#ffff00">840 </font><br>
+<font color="#ffff00">841 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">842 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;将words进行分组</font><br>
+<font color="#ffff00">843 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;增加查询效率</font><br>
+<font color="#ffff00">844 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;被 uni_docids 引用</font><br>
+<font color="#ffff00">845 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">846 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;<font color="#ff6060">'- begin to group words'</font><br>
+<font color="#ffff00">847 </font><br>
+<font color="#ffff00">848 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">pass</font><br>
+<font color="#ffff00">849 </font><br>
+<font color="#ffff00">850 </font><br>
+<font color="#ffff00">851 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;value(self):<br>
+<font color="#ffff00">852 </font><br>
+<font color="#ffff00">853 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">854 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;对每个docid</font><br>
+<font color="#ffff00">855 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;计算其文档主题相关度</font><br>
+<font color="#ffff00">856 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;同时　也包括对　rank的最后包装</font><br>
+<font color="#ffff00">857 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;对 pagerank 及　私有权值的支持</font><br>
+<font color="#ffff00">858 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">859 </font><br>
+<font color="#ffff00">860 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">pass</font><br>
+<font color="#ffff00">861 </font><br>
+<font color="#ffff00">862 </font><br>
+<font color="#ffff00">863 </font><br>
+<font color="#ffff00">864 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;sort(self):<br>
+<font color="#ffff00">865 </font><br>
+<font color="#ffff00">866 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">867 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;最终结果进行排序</font><br>
+<font color="#ffff00">868 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;差不多可以变成最终结果</font><br>
+<font color="#ffff00">869 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">870 </font><br>
+<font color="#ffff00">871 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;<font color="#ff6060">'&gt; sort res'</font><br>
+<font color="#ffff00">872 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.rank_sort.init(self.pack_res)<br>
+<font color="#ffff00">873 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.rank_sort.run()<br>
+<font color="#ffff00">874 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#8080ff">#开始将子类进行复原</font><br>
+<font color="#ffff00">875 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.initList()<br>
+<font color="#ffff00">876 </font><br>
+<font color="#ffff00">877 </font><br>
+<font color="#ffff00">878 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">def</font>&nbsp;<font color="#00ffff">show_res</font>(self):<br>
+<font color="#ffff00">879 </font><br>
+<font color="#ffff00">880 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">881 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;展示最终结果</font><br>
+<font color="#ffff00">882 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">883 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;<font color="#ff6060">'+ getiin show_res'</font><br>
+<font color="#ffff00">884 </font><br>
+<font color="#ffff00">885 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;<font color="#ff6060">'the length of res is'</font>,self.pack_res.length<br>
+<font color="#ffff00">886 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">for</font>&nbsp;i <font color="#ffff00">in</font>&nbsp;<font color="#00ffff">range</font>(self.pack_res.length):<br>
+<font color="#ffff00">887 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;self.pack_res.whit[i]<br>
+<font color="#ffff00">888 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<font color="#ffff00">889 </font><br>
+<font color="#ffff00">890 </font>&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ffff00">cdef</font>&nbsp;initList(self):<br>
+<font color="#ffff00">891 </font><br>
+<font color="#ffff00">892 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff6060">'''</font><br>
+<font color="#ffff00">893 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;将各种状态清0</font><br>
+<font color="#ffff00">894 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;准备下一次思索</font><br>
+<font color="#ffff00">895 </font><font color="#ff6060">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</font><br>
+<font color="#ffff00">896 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00ffff">print</font>&nbsp;<font color="#ff6060">'+ getin initList'</font><br>
+<font color="#ffff00">897 </font><br>
+<font color="#ffff00">898 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.show_res()<br>
+<font color="#ffff00">899 </font><br>
+<font color="#ffff00">900 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;free( self.hit_list.whit )<br>
+<font color="#ffff00">901 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.length = <font color="#ff6060">0</font><br>
+<font color="#ffff00">902 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.top = -<font color="#ff6060">1</font><br>
+<font color="#ffff00">903 </font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.empty = <font color="#ff6060">0</font><br>
+<font color="#ffff00">904 </font><br>
+</font></body>
+</html>

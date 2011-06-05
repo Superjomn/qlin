@@ -4,5 +4,5 @@ from Cython.Distutils import build_ext
 
 setup(
 cmdclass = {'build_ext': build_ext},
-ext_modules = [Extension("whit_list", ["whit_list.pyx"])]
+ext_modules = [Extension("hit_list_test", ["hit_list_test.pyx"])]
 )

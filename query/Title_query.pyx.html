@@ -1,0 +1,927 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>~/qlin/query/Title_query.pyx.html</title>
+<meta name="Generator" content="Vim/7.2" />
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<style type="text/css">
+<!--
+.Comment { color: #00ffff; }
+.PreProc { color: #ff40ff; }
+.Identifier { color: #00ffff; }
+.Constant { color: #ffff00; }
+.Statement { color: #ffff00; }
+.Type { color: #00ff00; }
+body { color: #ffffff; background-color: #FFFFFF; font-family: monospace; }
+.lnr { color: #ffff00; }
+-->
+</style>
+</head>
+<body>
+<span class="lnr">&nbsp;&nbsp;1 </span><span class="Comment"># -*- coding: ISO-8859-15 -*-</span><br />
+<span class="lnr">&nbsp;&nbsp;2 </span><br />
+<span class="lnr">&nbsp;&nbsp;3 </span><span class="Comment">##################################################</span><br />
+<span class="lnr">&nbsp;&nbsp;4 </span><span class="Comment">#</span><br />
+<span class="lnr">&nbsp;&nbsp;5 </span><span class="Comment">#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Query: 查询库</span><br />
+<span class="lnr">&nbsp;&nbsp;6 </span><span class="Comment">#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; qlin 内网全文搜索引擎</span><br />
+<span class="lnr">&nbsp;&nbsp;7 </span><span class="Comment">#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Created by Chunwei</span><br />
+<span class="lnr">&nbsp;&nbsp;8 </span><span class="Comment">#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; in memory of a friend </span><br />
+<span class="lnr">&nbsp;&nbsp;9 </span><span class="Comment">#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Best Wishes to Lavender!</span><br />
+<span class="lnr">&nbsp;10 </span><span class="Comment">#</span><br />
+<span class="lnr">&nbsp;11 </span><span class="Comment">##################################################</span><br />
+<span class="lnr">&nbsp;12 </span><br />
+<span class="lnr">&nbsp;13 </span><span class="PreProc">import</span>&nbsp;sys<br />
+<span class="lnr">&nbsp;14 </span><span class="Identifier">reload</span>(sys)<br />
+<span class="lnr">&nbsp;15 </span>sys.setdefaultencoding(<span class="Constant">'utf8'</span>)<br />
+<span class="lnr">&nbsp;16 </span><br />
+<span class="lnr">&nbsp;17 </span><br />
+<span class="lnr">&nbsp;18 </span><br />
+<span class="lnr">&nbsp;19 </span><span class="PreProc">from</span>&nbsp;parser.Init_Thes <span class="PreProc">import</span>&nbsp;Init_thesaurus , init_hashIndex<br />
+<span class="lnr">&nbsp;20 </span><br />
+<span class="lnr">&nbsp;21 </span><span class="PreProc">from</span>&nbsp;libc.stdlib <span class="PreProc">cimport</span>&nbsp;realloc,malloc,free<br />
+<span class="lnr">&nbsp;22 </span><br />
+<span class="lnr">&nbsp;23 </span><span class="PreProc">from</span>&nbsp;libc.stdio <span class="PreProc">cimport</span>&nbsp;fopen, fwrite, fread,fclose,FILE <br />
+<span class="lnr">&nbsp;24 </span><br />
+<span class="lnr">&nbsp;25 </span><span class="PreProc">from</span>&nbsp;ICTCLAS50.Ictclas <span class="PreProc">import</span>&nbsp;Ictclas<br />
+<span class="lnr">&nbsp;26 </span><br />
+<span class="lnr">&nbsp;27 </span><span class="PreProc">import</span>&nbsp;chardet <span class="Statement">as</span>&nbsp;cdt<br />
+<span class="lnr">&nbsp;28 </span><br />
+<span class="lnr">&nbsp;29 </span><br />
+<span class="lnr">&nbsp;30 </span>DEF List_num = <span class="Constant">20</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="Comment">#hit_lists中划分 块 数目</span><br />
+<span class="lnr">&nbsp;31 </span><br />
+<span class="lnr">&nbsp;32 </span><br />
+<span class="lnr">&nbsp;33 </span><span class="Constant">'''</span><br />
+<span class="lnr">&nbsp;34 </span><span class="Constant">算法：</span><br />
+<span class="lnr">&nbsp;35 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;定位到 wordid</span><br />
+<span class="lnr">&nbsp;36 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;返回每个docid的第一个记录</span><br />
+<span class="lnr">&nbsp;37 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;</span><br />
+<span class="lnr">&nbsp;38 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;再查找第二个词及以上时</span><br />
+<span class="lnr">&nbsp;39 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;直接在wordid中扫描原有docid</span><br />
+<span class="lnr">&nbsp;40 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;如果存在 加上score 否则 将原有记录刷新为0（表示放弃此docid)</span><br />
+<span class="lnr">&nbsp;41 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;</span><br />
+<span class="lnr">&nbsp;42 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;一直到最后 整理结果</span><br />
+<span class="lnr">&nbsp;43 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;进行排序</span><br />
+<span class="lnr">&nbsp;44 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;返回结果</span><br />
+<span class="lnr">&nbsp;45 </span><span class="Constant">'''</span><br />
+<span class="lnr">&nbsp;46 </span><br />
+<span class="lnr">&nbsp;47 </span><br />
+<span class="lnr">&nbsp;48 </span><span class="Comment">#定义 Hit 结构</span><br />
+<span class="lnr">&nbsp;49 </span><span class="Statement">cdef</span>&nbsp;<span class="Type">struct</span>&nbsp;Hit:<br />
+<span class="lnr">&nbsp;50 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;wordID<br />
+<span class="lnr">&nbsp;51 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;docID<br />
+<span class="lnr">&nbsp;52 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">short</span>&nbsp;score<br />
+<span class="lnr">&nbsp;53 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;pos<br />
+<span class="lnr">&nbsp;54 </span><br />
+<span class="lnr">&nbsp;55 </span><span class="Comment">#查询时 存储队列</span><br />
+<span class="lnr">&nbsp;56 </span><span class="Comment">#此处score未加以存储&nbsp;&nbsp;&nbsp;&nbsp;不可以直接继承</span><br />
+<span class="lnr">&nbsp;57 </span><span class="Comment">#直接计算其权质</span><br />
+<span class="lnr">&nbsp;58 </span><span class="Statement">cdef</span>&nbsp;<span class="Type">struct</span>&nbsp;Whit:<br />
+<span class="lnr">&nbsp;59 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;docID<br />
+<span class="lnr">&nbsp;60 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;pos&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="Comment">#可以直接比较位置</span><br />
+<span class="lnr">&nbsp;61 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">float</span>&nbsp;rank&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#得分</span><br />
+<span class="lnr">&nbsp;62 </span><br />
+<span class="lnr">&nbsp;63 </span><span class="Comment">#为了方便父亲和子类间信息交流</span><br />
+<span class="lnr">&nbsp;64 </span><span class="Comment">#定义whit_list 结构定义</span><br />
+<span class="lnr">&nbsp;65 </span><span class="Statement">cdef</span>&nbsp;<span class="Type">struct</span>&nbsp;WhitList:<br />
+<span class="lnr">&nbsp;66 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;length<br />
+<span class="lnr">&nbsp;67 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;top<br />
+<span class="lnr">&nbsp;68 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;empty <span class="Comment">#无效记录的数目</span><br />
+<span class="lnr">&nbsp;69 </span>&nbsp;&nbsp;&nbsp;&nbsp;Whit *whit<br />
+<span class="lnr">&nbsp;70 </span><br />
+<span class="lnr">&nbsp;71 </span><br />
+<span class="lnr">&nbsp;72 </span><span class="Comment">#最终整理过的结果整理结构</span><br />
+<span class="lnr">&nbsp;73 </span><span class="Statement">cdef</span>&nbsp;<span class="Type">struct</span>&nbsp;Pack_res:<br />
+<span class="lnr">&nbsp;74 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;length<br />
+<span class="lnr">&nbsp;75 </span>&nbsp;&nbsp;&nbsp;&nbsp;Whit *whit<br />
+<span class="lnr">&nbsp;76 </span><br />
+<span class="lnr">&nbsp;77 </span><br />
+<span class="lnr">&nbsp;78 </span><br />
+<span class="lnr">&nbsp;79 </span>DEF Whit_init_num = <span class="Constant">100</span>&nbsp;&nbsp;<br />
+<span class="lnr">&nbsp;80 </span>DEF Whit_add&nbsp;&nbsp;=&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">30</span><br />
+<span class="lnr">&nbsp;81 </span><br />
+<span class="lnr">&nbsp;82 </span><br />
+<span class="lnr">&nbsp;83 </span><span class="Comment">####################################</span><br />
+<span class="lnr">&nbsp;84 </span><span class="Comment">#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 在扫描过程中同时计算rank</span><br />
+<span class="lnr">&nbsp;85 </span><span class="Comment">#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 计算 权值</span><br />
+<span class="lnr">&nbsp;86 </span><span class="Comment">####################################</span><br />
+<span class="lnr">&nbsp;87 </span>DEF SCORE_EACH = <span class="Constant">1</span><br />
+<span class="lnr">&nbsp;88 </span><br />
+<span class="lnr">&nbsp;89 </span>DEF SCORE_TITLE = <span class="Constant">0</span><br />
+<span class="lnr">&nbsp;90 </span>DEF SCORE_B = <span class="Constant">1</span><br />
+<span class="lnr">&nbsp;91 </span>DEF SCORE_H1 = <span class="Constant">2</span><br />
+<span class="lnr">&nbsp;92 </span>DEF SCORE_A = <span class="Constant">5</span><br />
+<span class="lnr">&nbsp;93 </span>DEF SCORE_CONTENT = <span class="Constant">6</span><br />
+<span class="lnr">&nbsp;94 </span><br />
+<span class="lnr">&nbsp;95 </span><span class="Statement">cdef</span>&nbsp;inline <span class="Type">float</span>&nbsp;sc(<span class="Type">int</span>&nbsp;score):<br />
+<span class="lnr">&nbsp;96 </span><br />
+<span class="lnr">&nbsp;97 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">&nbsp;98 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;计算权值</span><br />
+<span class="lnr">&nbsp;99 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">100 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;score == SCORE_TITLE:<br />
+<span class="lnr">101 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span>&nbsp;<span class="Constant">5</span><br />
+<span class="lnr">102 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">elif</span>&nbsp;score ==SCORE_B:<br />
+<span class="lnr">103 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span>&nbsp;<span class="Constant">2.5</span><br />
+<span class="lnr">104 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">elif</span>&nbsp;score &gt;= SCORE_H1 <span class="Statement">and</span>&nbsp;score &lt;= SCORE_H1 + <span class="Constant">2</span>:<br />
+<span class="lnr">105 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span>&nbsp;<span class="Constant">2.5</span><br />
+<span class="lnr">106 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">elif</span>&nbsp;score == SCORE_A:<br />
+<span class="lnr">107 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span>&nbsp;<span class="Constant">1</span><br />
+<span class="lnr">108 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">elif</span>&nbsp;score == SCORE_CONTENT:<br />
+<span class="lnr">109 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span>&nbsp;<span class="Constant">2</span><br />
+<span class="lnr">110 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span>&nbsp;<span class="Constant">0</span><br />
+<span class="lnr">111 </span>&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">112 </span><br />
+<span class="lnr">113 </span><br />
+<span class="lnr">114 </span><span class="Statement">cdef</span>&nbsp;<span class="Statement">class</span>&nbsp;<span class="Identifier">Whit_list</span>:<br />
+<span class="lnr">115 </span><br />
+<span class="lnr">116 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">117 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;whit list</span><br />
+<span class="lnr">118 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;管理程序</span><br />
+<span class="lnr">119 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">120 </span><br />
+<span class="lnr">121 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;WhitList *hit_list<br />
+<span class="lnr">122 </span><br />
+<span class="lnr">123 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#扫描时 索引</span><br />
+<span class="lnr">124 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">int</span>&nbsp;scan_id <br />
+<span class="lnr">125 </span><br />
+<span class="lnr">126 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#公用 wid</span><br />
+<span class="lnr">127 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">int</span>&nbsp;wid<br />
+<span class="lnr">128 </span><br />
+<span class="lnr">129 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">def</span>&nbsp;<span class="Identifier">__cinit__</span>(self):<br />
+<span class="lnr">130 </span><br />
+<span class="lnr">131 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">132 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;init</span><br />
+<span class="lnr">133 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">134 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.scan_id = <span class="Constant">0</span><br />
+<span class="lnr">135 </span>&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">136 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">137 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;init(self,WhitList *whit_list,<span class="Type">int</span>&nbsp;wid):<br />
+<span class="lnr">138 </span><br />
+<span class="lnr">139 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">140 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;c语言层面的init</span><br />
+<span class="lnr">141 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">142 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#引用方式传递 直接修改直</span><br />
+<span class="lnr">143 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list = whit_list<br />
+<span class="lnr">144 </span><br />
+<span class="lnr">145 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.wid = wid<br />
+<span class="lnr">146 </span><br />
+<span class="lnr">147 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#若whit_list　内存未分配</span><br />
+<span class="lnr">148 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#则进行分配 </span><br />
+<span class="lnr">149 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;self.hit_list.whit == NULL:<br />
+<span class="lnr">150 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;<span class="Constant">'the whit_list is empty'</span><br />
+<span class="lnr">151 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;<span class="Constant">'begin to malloc'</span><br />
+<span class="lnr">152 </span><br />
+<span class="lnr">153 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.whit = &lt;Whit *&gt;malloc( Whit_init_num * <span class="Statement">sizeof</span>(Whit) )<br />
+<span class="lnr">154 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.top = -<span class="Constant">1</span><br />
+<span class="lnr">155 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.length = Whit_init_num<br />
+<span class="lnr">156 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.empty = <span class="Constant">0</span>&nbsp;<span class="Comment">#初始时无效记录数目为0 </span><br />
+<span class="lnr">157 </span><br />
+<span class="lnr">158 </span><br />
+<span class="lnr">159 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;show(self):<br />
+<span class="lnr">160 </span><br />
+<span class="lnr">161 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">162 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;展示结果</span><br />
+<span class="lnr">163 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">164 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span><span class="Constant">'+ whit_list -show begin to show the hitlist'</span><br />
+<span class="lnr">165 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>:<br />
+<span class="lnr">166 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;i<br />
+<span class="lnr">167 </span><br />
+<span class="lnr">168 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">for</span>&nbsp;i <span class="Statement">in</span>&nbsp;<span class="Identifier">range</span>(self.hit_list.top+<span class="Constant">1</span>):<br />
+<span class="lnr">169 </span><br />
+<span class="lnr">170 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;self.hit_list.whit[i].docID,self.hit_list.whit[i].rank<br />
+<span class="lnr">171 </span><br />
+<span class="lnr">172 </span><br />
+<span class="lnr">173 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">void</span>&nbsp;&nbsp;append(self, Hit hit):<br />
+<span class="lnr">174 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">175 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">176 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;append </span><br />
+<span class="lnr">177 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在初始化wlist时候使用</span><br />
+<span class="lnr">178 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;将 hit_list 自动加入到 whit_list中</span><br />
+<span class="lnr">179 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">180 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;Whit *base<br />
+<span class="lnr">181 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>:<br />
+<span class="lnr">182 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;i<br />
+<span class="lnr">183 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">184 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.top += <span class="Constant">1</span><br />
+<span class="lnr">185 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.whit[self.hit_list.top].docID = hit.docID<br />
+<span class="lnr">186 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.whit[self.hit_list.top].pos = hit.pos<br />
+<span class="lnr">187 </span><br />
+<span class="lnr">188 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#计算权质</span><br />
+<span class="lnr">189 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#初始化时&nbsp;&nbsp;直接赋值</span><br />
+<span class="lnr">190 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;<span class="Constant">'+whit_list - append'</span>,self.hit_list.top,self.hit_list.whit[self.hit_list.top].docID<br />
+<span class="lnr">191 </span><br />
+<span class="lnr">192 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.whit[self.top].rank = sc(hit.score)<span class="Comment"># * SCORE_EACH&nbsp;&nbsp;&nbsp;&nbsp;</span><br />
+<span class="lnr">193 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">194 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;self.hit_list.top &gt; self.hit_list.length - <span class="Constant">2</span>:<br />
+<span class="lnr">195 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#重新分配</span><br />
+<span class="lnr">196 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;base = &lt;Whit *&gt; realloc( self.hit_list.whit , <span class="Statement">sizeof</span>(Whit) * (self.hit_list.length + Whit_add) )<br />
+<span class="lnr">197 </span><br />
+<span class="lnr">198 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;base != NULL:<br />
+<span class="lnr">199 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.whit = base<br />
+<span class="lnr">200 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.length += Whit_add<br />
+<span class="lnr">201 </span><br />
+<span class="lnr">202 </span><br />
+<span class="lnr">203 </span><br />
+<span class="lnr">204 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">short</span>&nbsp;add(self,Hit hit):<br />
+<span class="lnr">205 </span><br />
+<span class="lnr">206 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">207 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;将剩余词汇添加到总hit_list记录中</span><br />
+<span class="lnr">208 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;包括判断</span><br />
+<span class="lnr">209 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;主程序 将所有单独docID载入其中</span><br />
+<span class="lnr">210 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;add 将会自动过滤和判断</span><br />
+<span class="lnr">211 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;如果外部docID不统一 将rank指为-1</span><br />
+<span class="lnr">212 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;表明此记录作废</span><br />
+<span class="lnr">213 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span>&nbsp;<br />
+<span class="lnr">214 </span><br />
+<span class="lnr">215 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#采用渐次扫描算法</span><br />
+<span class="lnr">216 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#外界逐次扫描</span><br />
+<span class="lnr">217 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#同时内部也逐步扫描</span><br />
+<span class="lnr">218 </span>&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">219 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;<span class="Constant">'+whit_list -add'</span><br />
+<span class="lnr">220 </span><br />
+<span class="lnr">221 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>:<br />
+<span class="lnr">222 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;j<br />
+<span class="lnr">223 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;cur_did<br />
+<span class="lnr">224 </span><br />
+<span class="lnr">225 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#去除无用记录 </span><br />
+<span class="lnr">226 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">while</span>&nbsp;self.hit_list.whit[self.scan_id].rank ==-<span class="Constant">1</span>&nbsp;<span class="Statement">and</span>&nbsp;self.scan_id &lt;= self.hit_list.top:<br />
+<span class="lnr">227 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#过滤无用记录　rank==-1</span><br />
+<span class="lnr">228 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.scan_id += <span class="Constant">1</span><br />
+<span class="lnr">229 </span><br />
+<span class="lnr">230 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#一直到最后都是 -1</span><br />
+<span class="lnr">231 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;self.scan_id &gt; self.hit_list.top:<br />
+<span class="lnr">232 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span>&nbsp;<span class="Constant">2</span><br />
+<span class="lnr">233 </span><br />
+<span class="lnr">234 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cur_did = self.hit_list.whit[self.scan_id].docID<br />
+<span class="lnr">235 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">236 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#首次某种</span><br />
+<span class="lnr">237 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;hit.docID &gt; self.hit_list.whit[self.hit_list.top].docID:<br />
+<span class="lnr">238 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#docID超过内部最大限度</span><br />
+<span class="lnr">239 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#不需要继续扫描下去</span><br />
+<span class="lnr">240 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span>&nbsp;<span class="Constant">2</span>&nbsp;&nbsp;<br />
+<span class="lnr">241 </span><br />
+<span class="lnr">242 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;hit.docID == cur_did:<br />
+<span class="lnr">243 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.whit[self.scan_id].rank += sc(hit.score)<span class="Comment"># * SCORE_ADD</span><br />
+<span class="lnr">244 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.scan_id += <span class="Constant">1</span><br />
+<span class="lnr">245 </span><br />
+<span class="lnr">246 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span>&nbsp;<span class="Constant">0</span><br />
+<span class="lnr">247 </span><br />
+<span class="lnr">248 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">elif</span>&nbsp;hit.docID &gt; cur_did:<br />
+<span class="lnr">249 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#外围已经超过　说明当前记录未命中</span><br />
+<span class="lnr">250 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.whit[self.scan_id].rank = -<span class="Constant">1</span><br />
+<span class="lnr">251 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#无效记录数目 + 1</span><br />
+<span class="lnr">252 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.empty += <span class="Constant">1</span><br />
+<span class="lnr">253 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.scan_id += <span class="Constant">1</span><br />
+<span class="lnr">254 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#内部 scan_id 过小</span><br />
+<span class="lnr">255 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span>&nbsp;<span class="Constant">1</span><br />
+<span class="lnr">256 </span><br />
+<span class="lnr">257 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">else</span>:<br />
+<span class="lnr">258 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#外界 scan_id 过小</span><br />
+<span class="lnr">259 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span>&nbsp;-<span class="Constant">1</span><br />
+<span class="lnr">260 </span><br />
+<span class="lnr">261 </span><br />
+<span class="lnr">262 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">void</span>&nbsp;init_scanID(self):<br />
+<span class="lnr">263 </span><br />
+<span class="lnr">264 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">265 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一轮扫描完毕</span><br />
+<span class="lnr">266 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.scan_id清０</span><br />
+<span class="lnr">267 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">268 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.scan_id = <span class="Constant">0</span><br />
+<span class="lnr">269 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">270 </span><br />
+<span class="lnr">271 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">272 </span><br />
+<span class="lnr">273 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br />
+<span class="lnr">274 </span><br />
+<span class="lnr">275 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">276 </span><br />
+<span class="lnr">277 </span><span class="Comment">################################</span><br />
+<span class="lnr">278 </span><span class="Comment">#</span><br />
+<span class="lnr">279 </span><span class="Comment">#&nbsp;&nbsp; 单个hit查找容器（包括doc)</span><br />
+<span class="lnr">280 </span><span class="Comment">#&nbsp;&nbsp; 返回查找到的docid</span><br />
+<span class="lnr">281 </span><span class="Comment">#&nbsp;&nbsp; 可以考虑多线程</span><br />
+<span class="lnr">282 </span><span class="Comment">#&nbsp;&nbsp; 得到结果回合到总数据容器中</span><br />
+<span class="lnr">283 </span><span class="Comment">#</span><br />
+<span class="lnr">284 </span><span class="Comment">################################</span><br />
+<span class="lnr">285 </span><br />
+<span class="lnr">286 </span><span class="Statement">cdef</span>&nbsp;<span class="Statement">class</span>&nbsp;<span class="Identifier">Hit_find</span>:<br />
+<span class="lnr">287 </span><br />
+<span class="lnr">288 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">289 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;从hit中查取相应内容</span><br />
+<span class="lnr">290 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">291 </span><br />
+<span class="lnr">292 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#whit 存储目录</span><br />
+<span class="lnr">293 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">char</span>&nbsp;*fdir<br />
+<span class="lnr">294 </span>&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">295 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#当前 hit文件(避免重复载入)</span><br />
+<span class="lnr">296 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">int</span>&nbsp;cur_hit_file<br />
+<span class="lnr">297 </span><br />
+<span class="lnr">298 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#内存中参考 hit 存储队列</span><br />
+<span class="lnr">299 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;Hit *hit_list<br />
+<span class="lnr">300 </span><br />
+<span class="lnr">301 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#hit 长度</span><br />
+<span class="lnr">302 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">int</span>&nbsp;length<br />
+<span class="lnr">303 </span><br />
+<span class="lnr">304 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#主程序公共查找结果操作池</span><br />
+<span class="lnr">305 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#whit_list 管理类</span><br />
+<span class="lnr">306 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;Whit_list whit_list<br />
+<span class="lnr">307 </span><br />
+<span class="lnr">308 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">object</span>&nbsp;hashIndex<br />
+<span class="lnr">309 </span><br />
+<span class="lnr">310 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#为了对公共池足够的控制</span><br />
+<span class="lnr">311 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#本地取一个索引</span><br />
+<span class="lnr">312 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;WhitList *wlist<br />
+<span class="lnr">313 </span><br />
+<span class="lnr">314 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#每个hit文件的长度</span><br />
+<span class="lnr">315 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">int</span>&nbsp;width[List_num]<br />
+<span class="lnr">316 </span><br />
+<span class="lnr">317 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#公用 wid</span><br />
+<span class="lnr">318 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">int</span>&nbsp;wid<br />
+<span class="lnr">319 </span><br />
+<span class="lnr">320 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#运行时相关变量</span><br />
+<span class="lnr">321 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>:<br />
+<span class="lnr">322 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#wid的边界</span><br />
+<span class="lnr">323 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;wleft_id<br />
+<span class="lnr">324 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;wright_id<br />
+<span class="lnr">325 </span><br />
+<span class="lnr">326 </span><br />
+<span class="lnr">327 </span><br />
+<span class="lnr">328 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">def</span>&nbsp;<span class="Identifier">__cinit__</span>(self,<span class="Type">char</span>&nbsp;*fdir,<span class="Type">char</span>&nbsp;*width_ph):<br />
+<span class="lnr">329 </span><br />
+<span class="lnr">330 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">331 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;init</span><br />
+<span class="lnr">332 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hit_list: 父亲hit存储池</span><br />
+<span class="lnr">333 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">334 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#初始化hit地址</span><br />
+<span class="lnr">335 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.fdir=fdir<br />
+<span class="lnr">336 </span><br />
+<span class="lnr">337 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#初始化 hashIndex 便于判断 word该属于文件</span><br />
+<span class="lnr">338 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hashIndex = init_hashIndex(<span class="Constant">&quot;store/index_hash.b&quot;</span>,<span class="Constant">&quot;store/word_wide.txt&quot;</span>)<br />
+<span class="lnr">339 </span><br />
+<span class="lnr">340 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#初始化width</span><br />
+<span class="lnr">341 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;f = <span class="Identifier">open</span>(width_ph)<br />
+<span class="lnr">342 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;c=f.read()<br />
+<span class="lnr">343 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;f.close()<br />
+<span class="lnr">344 </span><br />
+<span class="lnr">345 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">int</span>&nbsp;i=<span class="Constant">0</span><br />
+<span class="lnr">346 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#初始化 每个文件的 hit 数量记录</span><br />
+<span class="lnr">347 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">for</span>&nbsp;w <span class="Statement">in</span>&nbsp;c.split():<br />
+<span class="lnr">348 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.width[i]=<span class="Type">int</span>(w) <br />
+<span class="lnr">349 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i+=<span class="Constant">1</span><br />
+<span class="lnr">350 </span><br />
+<span class="lnr">351 </span><br />
+<span class="lnr">352 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">void</span>&nbsp;init(self,WhitList *whit, <span class="Type">int</span>&nbsp;wid):<br />
+<span class="lnr">353 </span><br />
+<span class="lnr">354 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">355 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;c语言层面的 init</span><br />
+<span class="lnr">356 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">357 </span><br />
+<span class="lnr">358 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.wid = wid<br />
+<span class="lnr">359 </span><br />
+<span class="lnr">360 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#初始化 whit 运行时内存池</span><br />
+<span class="lnr">361 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#直接与父whit相同</span><br />
+<span class="lnr">362 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#结构体能否协调一直　需要测试!!!!!!!!!!!?????????????????????</span><br />
+<span class="lnr">363 </span><br />
+<span class="lnr">364 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.whit_list = Whit_list()<br />
+<span class="lnr">365 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.whit_list.init(whit,wid)<br />
+<span class="lnr">366 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#为了对 公共池 取得足够的控制 </span><br />
+<span class="lnr">367 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#本地取得一个索引副本</span><br />
+<span class="lnr">368 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.wlist = whit<br />
+<span class="lnr">369 </span><br />
+<span class="lnr">370 </span><br />
+<span class="lnr">371 </span><br />
+<span class="lnr">372 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;init_hit_file(self,hashvalue):<br />
+<span class="lnr">373 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">374 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;通过 hashvalue 确定并且载入相应的hit文件内容</span><br />
+<span class="lnr">375 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">376 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">int</span>&nbsp;index = self.hashIndex.pos(hashvalue)<br />
+<span class="lnr">377 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">char</span>&nbsp;*fn<br />
+<span class="lnr">378 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;FILE *fp<br />
+<span class="lnr">379 </span><br />
+<span class="lnr">380 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#如果为同一个范围内word</span><br />
+<span class="lnr">381 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#不进行处理</span><br />
+<span class="lnr">382 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;index == self.cur_hit_file:<br />
+<span class="lnr">383 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">pass</span><br />
+<span class="lnr">384 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">385 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">else</span>:<br />
+<span class="lnr">386 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#载入新的文件内容</span><br />
+<span class="lnr">387 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ind=<span class="Identifier">str</span>(index) <br />
+<span class="lnr">388 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>(self.hit_list != NULL):<br />
+<span class="lnr">389 </span><br />
+<span class="lnr">390 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;free(self.hit_list)<br />
+<span class="lnr">391 </span><br />
+<span class="lnr">392 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#内存中单个hit文件</span><br />
+<span class="lnr">393 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#分配内存</span><br />
+<span class="lnr">394 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list=&lt;Hit *&gt;malloc(<span class="Statement">sizeof</span>(Hit) * self.width[index])<br />
+<span class="lnr">395 </span><br />
+<span class="lnr">396 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#读入数据</span><br />
+<span class="lnr">397 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;<span class="Constant">'begin read the file'</span><br />
+<span class="lnr">398 </span><br />
+<span class="lnr">399 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#fname = self.fdir +ind +'.hit'</span><br />
+<span class="lnr">400 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fname = <span class="Constant">'store/hits/'</span>&nbsp;+ ind + <span class="Constant">'.hit'</span><br />
+<span class="lnr">401 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">402 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fn = fname<br />
+<span class="lnr">403 </span><br />
+<span class="lnr">404 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;<span class="Constant">'the fname is'</span>,fn<br />
+<span class="lnr">405 </span><br />
+<span class="lnr">406 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fp=&lt;FILE *&gt;fopen(fn,<span class="Constant">&quot;rb&quot;</span>)<br />
+<span class="lnr">407 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fread(self.hit_list , <span class="Statement">sizeof</span>(Hit), self.width[index] ,fp)<br />
+<span class="lnr">408 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fclose(fp)<br />
+<span class="lnr">409 </span><br />
+<span class="lnr">410 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#负值hit_list长度</span><br />
+<span class="lnr">411 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.length = self.width[index]<br />
+<span class="lnr">412 </span><br />
+<span class="lnr">413 </span><br />
+<span class="lnr">414 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;inline <span class="Type">short</span>&nbsp;pos_mid_wid(self):<br />
+<span class="lnr">415 </span><br />
+<span class="lnr">416 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">417 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;利用二分发确定wid的大概位置</span><br />
+<span class="lnr">418 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">419 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.wleft_id=<span class="Constant">0</span>&nbsp;<span class="Comment">#??????????????</span><br />
+<span class="lnr">420 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.wright_id=<span class="Constant">0</span><br />
+<span class="lnr">421 </span><br />
+<span class="lnr">422 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>:<br />
+<span class="lnr">423 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;fir<br />
+<span class="lnr">424 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;mid<br />
+<span class="lnr">425 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;end<br />
+<span class="lnr">426 </span><br />
+<span class="lnr">427 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fir = <span class="Constant">0</span><br />
+<span class="lnr">428 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mid = <span class="Constant">0</span><br />
+<span class="lnr">429 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end = self.length-<span class="Constant">1</span><br />
+<span class="lnr">430 </span><br />
+<span class="lnr">431 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">while</span>&nbsp;fir&lt;end:<br />
+<span class="lnr">432 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mid = (fir+end)/<span class="Constant">2</span><br />
+<span class="lnr">433 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;self.wid &gt; self.hit_list[mid].wordID:<br />
+<span class="lnr">434 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fir = mid+<span class="Constant">1</span><br />
+<span class="lnr">435 </span><br />
+<span class="lnr">436 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">elif</span>&nbsp;self.wid &lt; self.hit_list[mid].wordID:<br />
+<span class="lnr">437 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end = mid-<span class="Constant">1</span><br />
+<span class="lnr">438 </span><br />
+<span class="lnr">439 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">else</span>:<br />
+<span class="lnr">440 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">break</span><br />
+<span class="lnr">441 </span><br />
+<span class="lnr">442 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;fir == end:<br />
+<span class="lnr">443 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;self.hit_list[fir].wordID != self.wid:<br />
+<span class="lnr">444 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#wid在文件中不存在</span><br />
+<span class="lnr">445 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span>&nbsp;<span class="Constant">0</span><br />
+<span class="lnr">446 </span><br />
+<span class="lnr">447 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">else</span>:<br />
+<span class="lnr">448 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span>&nbsp;mid<br />
+<span class="lnr">449 </span><br />
+<span class="lnr">450 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">elif</span>&nbsp;fir&gt;end:<br />
+<span class="lnr">451 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span>&nbsp;<span class="Constant">0</span><br />
+<span class="lnr">452 </span><br />
+<span class="lnr">453 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">else</span>:<br />
+<span class="lnr">454 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span>&nbsp;mid<br />
+<span class="lnr">455 </span><br />
+<span class="lnr">456 </span><br />
+<span class="lnr">457 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">void</span>&nbsp;pos_wid_scope(self):<br />
+<span class="lnr">458 </span><br />
+<span class="lnr">459 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">460 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;确定wid在hit列表中范围</span><br />
+<span class="lnr">461 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;需要另外的wid的hash表支持</span><br />
+<span class="lnr">462 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">463 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>:<br />
+<span class="lnr">464 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;i<br />
+<span class="lnr">465 </span><br />
+<span class="lnr">466 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i=self.pos_mid_wid()<br />
+<span class="lnr">467 </span><br />
+<span class="lnr">468 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">while</span>&nbsp;i&gt;=<span class="Constant">0</span>:<br />
+<span class="lnr">469 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;self.hit_list[i].wordID == self.wid:<br />
+<span class="lnr">470 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i -= <span class="Constant">1</span><br />
+<span class="lnr">471 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">else</span>:<br />
+<span class="lnr">472 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">break</span><br />
+<span class="lnr">473 </span><br />
+<span class="lnr">474 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.wleft_id = i+<span class="Constant">1</span><br />
+<span class="lnr">475 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">476 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">while</span>&nbsp;i&lt;=self.length-<span class="Constant">1</span>:<br />
+<span class="lnr">477 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;self.hit_list[i].wordID == self.wid:<br />
+<span class="lnr">478 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i += <span class="Constant">1</span><br />
+<span class="lnr">479 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">else</span>:<br />
+<span class="lnr">480 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">break</span><br />
+<span class="lnr">481 </span><br />
+<span class="lnr">482 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.wright_id = i-<span class="Constant">1</span><br />
+<span class="lnr">483 </span><br />
+<span class="lnr">484 </span><br />
+<span class="lnr">485 </span><br />
+<span class="lnr">486 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">void</span>&nbsp;init_whit_list(self):<br />
+<span class="lnr">487 </span><br />
+<span class="lnr">488 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">489 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;从第一个词开始</span><br />
+<span class="lnr">490 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;首次初始化whit空间</span><br />
+<span class="lnr">491 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;以后的词均在此空间内进行过滤便可</span><br />
+<span class="lnr">492 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">493 </span><br />
+<span class="lnr">494 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>:<br />
+<span class="lnr">495 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#当前搜索的did</span><br />
+<span class="lnr">496 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#只第一个did有效</span><br />
+<span class="lnr">497 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;cur_did<br />
+<span class="lnr">498 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;i&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="Comment">#hit_list的index</span><br />
+<span class="lnr">499 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;j&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="Comment">#whit_list的index</span><br />
+<span class="lnr">500 </span><br />
+<span class="lnr">501 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#确定wid边界</span><br />
+<span class="lnr">502 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#self.pos_wid_scope()</span><br />
+<span class="lnr">503 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#初始时 cur_did 故意不同</span><br />
+<span class="lnr">504 </span><br />
+<span class="lnr">505 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cur_did = self.hit_list[self.wleft_id].docID - <span class="Constant">1</span><br />
+<span class="lnr">506 </span><br />
+<span class="lnr">507 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i=self.wleft_id<br />
+<span class="lnr">508 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#初始化第一个did</span><br />
+<span class="lnr">509 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">while</span>&nbsp;i&lt;=self.wright_id:<br />
+<span class="lnr">510 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#扫描整个　wid　字段</span><br />
+<span class="lnr">511 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;self.hit_list[i].docID == cur_did:<br />
+<span class="lnr">512 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">pass</span><br />
+<span class="lnr">513 </span><br />
+<span class="lnr">514 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">else</span>:<br />
+<span class="lnr">515 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.whit_list.append(self.hit_list[i])<br />
+<span class="lnr">516 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cur_did = self.hit_list[i].docID<br />
+<span class="lnr">517 </span><br />
+<span class="lnr">518 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i+=<span class="Constant">1</span><br />
+<span class="lnr">519 </span><br />
+<span class="lnr">520 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.whit_list.show()<br />
+<span class="lnr">521 </span><br />
+<span class="lnr">522 </span>&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">523 </span>&nbsp;&nbsp;&nbsp;&nbsp; <br />
+<span class="lnr">524 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">void</span>&nbsp;find(self,<span class="Type">char</span>&nbsp;*word):<br />
+<span class="lnr">525 </span><br />
+<span class="lnr">526 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">527 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;查找词主程序</span><br />
+<span class="lnr">528 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在 init_whit_list 完成后</span><br />
+<span class="lnr">529 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;默认　已经存在一个word记录</span><br />
+<span class="lnr">530 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">531 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>:<br />
+<span class="lnr">532 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">double</span>&nbsp;hashvalue<br />
+<span class="lnr">533 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;hash_file_id<br />
+<span class="lnr">534 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#特定wid的起始坐标</span><br />
+<span class="lnr">535 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#需要 wid hash表的支持</span><br />
+<span class="lnr">536 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;widstart<br />
+<span class="lnr">537 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;widend<br />
+<span class="lnr">538 </span><br />
+<span class="lnr">539 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hashvalue = <span class="Identifier">hash</span>(word)<br />
+<span class="lnr">540 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#初始化 hit 文件队列</span><br />
+<span class="lnr">541 </span><br />
+<span class="lnr">542 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#hash_file_id = self.pos_word_file(hashvalue)</span><br />
+<span class="lnr">543 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#刷新内存</span><br />
+<span class="lnr">544 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.init_hit_file(hashvalue)<br />
+<span class="lnr">545 </span><br />
+<span class="lnr">546 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#确定wid对应字段范围</span><br />
+<span class="lnr">547 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#此处需要确定　wid</span><br />
+<span class="lnr">548 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.pos_wid_scope()<br />
+<span class="lnr">549 </span><br />
+<span class="lnr">550 </span><br />
+<span class="lnr">551 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#自动初始化</span><br />
+<span class="lnr">552 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#wlist 为本地取得的 whit_list 的一个副本</span><br />
+<span class="lnr">553 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#标志为 self.whit_list.top==-1</span><br />
+<span class="lnr">554 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;self.wlist.top == -<span class="Constant">1</span>:<br />
+<span class="lnr">555 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#此处需要确定　wid !!!!?????????????????????</span><br />
+<span class="lnr">556 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.init_whit_list()<br />
+<span class="lnr">557 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span><br />
+<span class="lnr">558 </span><br />
+<span class="lnr">559 </span><br />
+<span class="lnr">560 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#开始遍历 对did进行处理</span><br />
+<span class="lnr">561 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>:<br />
+<span class="lnr">562 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;i<br />
+<span class="lnr">563 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;cur_did<br />
+<span class="lnr">564 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;res<br />
+<span class="lnr">565 </span><br />
+<span class="lnr">566 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#?????????????????????????????????????</span><br />
+<span class="lnr">567 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i=self.wleft_id<br />
+<span class="lnr">568 </span><br />
+<span class="lnr">569 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#为了对第一个hit_list进行处理</span><br />
+<span class="lnr">570 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#估计改变cur_did</span><br />
+<span class="lnr">571 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cur_did=self.hit_list[i].docID - <span class="Constant">1</span><br />
+<span class="lnr">572 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br />
+<span class="lnr">573 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">while</span>&nbsp;i &lt;= self.wright_id:<br />
+<span class="lnr">574 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#在wid内进行遍历</span><br />
+<span class="lnr">575 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;self.hit_list[i].docID == cur_did:<br />
+<span class="lnr">576 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">pass</span><br />
+<span class="lnr">577 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">else</span>:<br />
+<span class="lnr">578 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;res = self.whit_list.add(self.hit_list[i])<br />
+<span class="lnr">579 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cur_did = self.hit_list[i].docID<br />
+<span class="lnr">580 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">581 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;res == <span class="Constant">2</span>:<br />
+<span class="lnr">582 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#查找外围范围溢出</span><br />
+<span class="lnr">583 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">break</span><br />
+<span class="lnr">584 </span><br />
+<span class="lnr">585 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i+=<span class="Constant">1</span><br />
+<span class="lnr">586 </span>&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">587 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#whit_list 的 scanID 清 0</span><br />
+<span class="lnr">588 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.whit_list.init_scanID()<br />
+<span class="lnr">589 </span><br />
+<span class="lnr">590 </span><br />
+<span class="lnr">591 </span><span class="Comment">###############################</span><br />
+<span class="lnr">592 </span><span class="Comment">#</span><br />
+<span class="lnr">593 </span><span class="Comment">#&nbsp;&nbsp; RankSorter</span><br />
+<span class="lnr">594 </span><span class="Comment">#&nbsp;&nbsp;&nbsp;&nbsp; 最终权值排序 </span><br />
+<span class="lnr">595 </span><span class="Comment">#</span><br />
+<span class="lnr">596 </span><span class="Comment">##############################</span><br />
+<span class="lnr">597 </span><span class="Statement">cdef</span>&nbsp;<span class="Statement">class</span>&nbsp;<span class="Identifier">RankSorter</span>:<br />
+<span class="lnr">598 </span><br />
+<span class="lnr">599 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">600 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;进行排序&nbsp;&nbsp;使用cython进行优化</span><br />
+<span class="lnr">601 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">602 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;Whit *dali<br />
+<span class="lnr">603 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">int</span>&nbsp;length<br />
+<span class="lnr">604 </span>&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">605 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;init(self,Pack_res datalist):<br />
+<span class="lnr">606 </span><br />
+<span class="lnr">607 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">608 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;init</span><br />
+<span class="lnr">609 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">610 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.dali=datalist.whit<br />
+<span class="lnr">611 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.length=datalist.length<br />
+<span class="lnr">612 </span><br />
+<span class="lnr">613 </span><br />
+<span class="lnr">614 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">float</span>&nbsp;gvalue(self,Whit data):<br />
+<span class="lnr">615 </span><br />
+<span class="lnr">616 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">617 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;返回需要进行比较的值</span><br />
+<span class="lnr">618 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">619 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span>&nbsp;data.rank<br />
+<span class="lnr">620 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">621 </span><br />
+<span class="lnr">622 </span><br />
+<span class="lnr">623 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">def</span>&nbsp;<span class="Identifier">quicksort</span>(self,<span class="Type">int</span>&nbsp;p,<span class="Type">int</span>&nbsp;q):<br />
+<span class="lnr">624 </span><br />
+<span class="lnr">625 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">int</span>&nbsp;j<br />
+<span class="lnr">626 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st=[]<br />
+<span class="lnr">627 </span><br />
+<span class="lnr">628 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">while</span>&nbsp;<span class="Identifier">True</span>:<br />
+<span class="lnr">629 </span><br />
+<span class="lnr">630 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">while</span>&nbsp;p&lt;q:<br />
+<span class="lnr">631 </span><br />
+<span class="lnr">632 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;j=self.partition(p,q)<br />
+<span class="lnr">633 </span><br />
+<span class="lnr">634 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;(j-p)&lt;(q-j):<br />
+<span class="lnr">635 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st.append(j+<span class="Constant">1</span>)<br />
+<span class="lnr">636 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st.append(q)<br />
+<span class="lnr">637 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;q=j-<span class="Constant">1</span><br />
+<span class="lnr">638 </span><br />
+<span class="lnr">639 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">else</span>:<br />
+<span class="lnr">640 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st.append(p)<br />
+<span class="lnr">641 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st.append(j-<span class="Constant">1</span>)<br />
+<span class="lnr">642 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;p=j+<span class="Constant">1</span><br />
+<span class="lnr">643 </span><br />
+<span class="lnr">644 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>(<span class="Identifier">len</span>(st)==<span class="Constant">0</span>):<br />
+<span class="lnr">645 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span><br />
+<span class="lnr">646 </span><br />
+<span class="lnr">647 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;q=st.pop()<br />
+<span class="lnr">648 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;p=st.pop()<br />
+<span class="lnr">649 </span><br />
+<span class="lnr">650 </span><br />
+<span class="lnr">651 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">int</span>&nbsp;partition(self,<span class="Type">int</span>&nbsp;low,<span class="Type">int</span>&nbsp;high):<br />
+<span class="lnr">652 </span><br />
+<span class="lnr">653 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v=self.dali[low]<br />
+<span class="lnr">654 </span><br />
+<span class="lnr">655 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">while</span>&nbsp;low&lt;high:<br />
+<span class="lnr">656 </span><br />
+<span class="lnr">657 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">while</span>&nbsp;low&lt;high <span class="Statement">and</span>&nbsp;self.gvalue( self.dali[high] ) &gt;= self.gvalue( v ):<br />
+<span class="lnr">658 </span><br />
+<span class="lnr">659 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;high-=<span class="Constant">1</span><br />
+<span class="lnr">660 </span><br />
+<span class="lnr">661 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.dali[low]=self.dali[high]<br />
+<span class="lnr">662 </span><br />
+<span class="lnr">663 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">while</span>&nbsp;low&lt;high <span class="Statement">and</span>&nbsp;self.gvalue( self.dali[low] )&lt;=self.gvalue( v ):<br />
+<span class="lnr">664 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;low+=<span class="Constant">1</span><br />
+<span class="lnr">665 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.dali[high]=self.dali[low]<br />
+<span class="lnr">666 </span><br />
+<span class="lnr">667 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.dali[low]=v<br />
+<span class="lnr">668 </span><br />
+<span class="lnr">669 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span>&nbsp;low<br />
+<span class="lnr">670 </span><br />
+<span class="lnr">671 </span><br />
+<span class="lnr">672 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">void</span>&nbsp;run(self):<br />
+<span class="lnr">673 </span><br />
+<span class="lnr">674 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">675 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;运行主程序</span><br />
+<span class="lnr">676 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">677 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.quicksort(<span class="Constant">0</span>,self.length-<span class="Constant">1</span>)<br />
+<span class="lnr">678 </span><br />
+<span class="lnr">679 </span><br />
+<span class="lnr">680 </span><br />
+<span class="lnr">681 </span><br />
+<span class="lnr">682 </span><br />
+<span class="lnr">683 </span><br />
+<span class="lnr">684 </span><span class="Comment">###############################</span><br />
+<span class="lnr">685 </span><span class="Comment">#</span><br />
+<span class="lnr">686 </span><span class="Comment">#&nbsp;&nbsp;需要 初始化一块 wordid hash表</span><br />
+<span class="lnr">687 </span><span class="Comment">#</span><br />
+<span class="lnr">688 </span><span class="Comment">###############################</span><br />
+<span class="lnr">689 </span><br />
+<span class="lnr">690 </span><br />
+<span class="lnr">691 </span><span class="Statement">cdef</span>&nbsp;<span class="Statement">class</span>&nbsp;<span class="Identifier">Query</span>:<br />
+<span class="lnr">692 </span><br />
+<span class="lnr">693 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">694 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;查询库</span><br />
+<span class="lnr">695 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;查询主程序</span><br />
+<span class="lnr">696 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;负责总的资源分配协调</span><br />
+<span class="lnr">697 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;输入一段 句子 返回 最终查询的 docID</span><br />
+<span class="lnr">698 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;并且进行排序</span><br />
+<span class="lnr">699 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;此为单线程</span><br />
+<span class="lnr">700 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">701 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#动态查找队列</span><br />
+<span class="lnr">702 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;WhitList hit_list<br />
+<span class="lnr">703 </span><br />
+<span class="lnr">704 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#whit 长度</span><br />
+<span class="lnr">705 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;length<br />
+<span class="lnr">706 </span><br />
+<span class="lnr">707 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#需要查找的词组</span><br />
+<span class="lnr">708 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">object</span>&nbsp;words<br />
+<span class="lnr">709 </span><br />
+<span class="lnr">710 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#动态查找容器</span><br />
+<span class="lnr">711 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;Hit_find hit_find<br />
+<span class="lnr">712 </span><br />
+<span class="lnr">713 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#整理过的结果</span><br />
+<span class="lnr">714 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;Pack_res pack_res<br />
+<span class="lnr">715 </span>&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">716 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#排序库</span><br />
+<span class="lnr">717 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;RankSorter rank_sort<br />
+<span class="lnr">718 </span><br />
+<span class="lnr">719 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#词库</span><br />
+<span class="lnr">720 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">object</span>&nbsp;thes<br />
+<span class="lnr">721 </span><br />
+<span class="lnr">722 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">object</span>&nbsp;ict<br />
+<span class="lnr">723 </span><br />
+<span class="lnr">724 </span><br />
+<span class="lnr">725 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">def</span>&nbsp;<span class="Identifier">__cinit__</span>(self,<span class="Type">char</span>&nbsp;*fdir,<span class="Type">char</span>&nbsp;*width_ph):<br />
+<span class="lnr">726 </span><br />
+<span class="lnr">727 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">728 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;init </span><br />
+<span class="lnr">729 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;词库</span><br />
+<span class="lnr">730 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;索引库</span><br />
+<span class="lnr">731 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">732 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.words = []<br />
+<span class="lnr">733 </span><br />
+<span class="lnr">734 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.ict=Ictclas(<span class="Constant">'ICTCLAS50/'</span>) <br />
+<span class="lnr">735 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#初始化动态查找池</span><br />
+<span class="lnr">736 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#此处传递结构需要注意 !!!!!!!!!!!!&nbsp;&nbsp;????????????????????</span><br />
+<span class="lnr">737 </span><br />
+<span class="lnr">738 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#词库</span><br />
+<span class="lnr">739 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.thes=Init_thesaurus(<span class="Constant">'store/wordBar'</span>)<br />
+<span class="lnr">740 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">741 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#初始化 hit_find</span><br />
+<span class="lnr">742 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_find = Hit_find( fdir, width_ph)<br />
+<span class="lnr">743 </span><br />
+<span class="lnr">744 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#排序库</span><br />
+<span class="lnr">745 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.rank_sort=RankSorter()<br />
+<span class="lnr">746 </span><br />
+<span class="lnr">747 </span><br />
+<span class="lnr">748 </span><br />
+<span class="lnr">749 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">void</span>&nbsp;word_split(self,<span class="Type">char</span>&nbsp;*paragh):<br />
+<span class="lnr">750 </span><br />
+<span class="lnr">751 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">752 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;将传入的句子进行分词</span><br />
+<span class="lnr">753 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">754 </span><br />
+<span class="lnr">755 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.words = self.ict.split(paragh).split()<br />
+<span class="lnr">756 </span><br />
+<span class="lnr">757 </span><br />
+<span class="lnr">758 </span><br />
+<span class="lnr">759 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">def</span>&nbsp;<span class="Identifier">find_words</span>(self,<span class="Type">char</span>&nbsp;*para):<br />
+<span class="lnr">760 </span><br />
+<span class="lnr">761 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">762 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;将词汇分词</span><br />
+<span class="lnr">763 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;并且进行插曲</span><br />
+<span class="lnr">764 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">765 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>:<br />
+<span class="lnr">766 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;wid<br />
+<span class="lnr">767 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">object</span>&nbsp;word<br />
+<span class="lnr">768 </span><br />
+<span class="lnr">769 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#对word进行分组</span><br />
+<span class="lnr">770 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">771 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;<span class="Constant">'begin to find words'</span>,<br />
+<span class="lnr">772 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;para<br />
+<span class="lnr">773 </span><br />
+<span class="lnr">774 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;cdt.detect(para)<br />
+<span class="lnr">775 </span><br />
+<span class="lnr">776 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.word_split(para)<br />
+<span class="lnr">777 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.group_words()<br />
+<span class="lnr">778 </span><br />
+<span class="lnr">779 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#对每个word进行处理</span><br />
+<span class="lnr">780 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">for</span>&nbsp;word <span class="Statement">in</span>&nbsp;self.words:<br />
+<span class="lnr">781 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#进行查取</span><br />
+<span class="lnr">782 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#同时自动收录value</span><br />
+<span class="lnr">783 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#hit_find会自动对父亲的hit存储池进行修改扩充</span><br />
+<span class="lnr">784 </span><br />
+<span class="lnr">785 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;<span class="Constant">'- to find'</span>,word<br />
+<span class="lnr">786 </span><br />
+<span class="lnr">787 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wid = self.thes.find(word)<br />
+<span class="lnr">788 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;<span class="Constant">'the wid is'</span>,wid<br />
+<span class="lnr">789 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">790 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#初始化 hit查找库</span><br />
+<span class="lnr">791 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;<span class="Constant">'- init hit_find'</span><br />
+<span class="lnr">792 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_find.init(&amp;self.hit_list,wid)<br />
+<span class="lnr">793 </span><br />
+<span class="lnr">794 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_find.find(word) <br />
+<span class="lnr">795 </span><br />
+<span class="lnr">796 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#查找完毕 开始后续处理</span><br />
+<span class="lnr">797 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#结果加工</span><br />
+<span class="lnr">798 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;<span class="Constant">'begin to pack res'</span><br />
+<span class="lnr">799 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.res_pack()<br />
+<span class="lnr">800 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#结果排序</span><br />
+<span class="lnr">801 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;<span class="Constant">'begin to sort res'</span><br />
+<span class="lnr">802 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.sort()<br />
+<span class="lnr">803 </span><br />
+<span class="lnr">804 </span><br />
+<span class="lnr">805 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;<span class="Type">short</span>&nbsp;res_pack(self):<br />
+<span class="lnr">806 </span><br />
+<span class="lnr">807 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">808 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;将结果进行整理</span><br />
+<span class="lnr">809 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;去除无用记录</span><br />
+<span class="lnr">810 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;便于进行排序输出结果</span><br />
+<span class="lnr">811 </span><br />
+<span class="lnr">812 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;同时　将各个类清0 还原</span><br />
+<span class="lnr">813 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">814 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;self.hit_list.empty == self.hit_list.top+<span class="Constant">1</span>:<br />
+<span class="lnr">815 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#无有效结果</span><br />
+<span class="lnr">816 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span>&nbsp;-<span class="Constant">1</span><br />
+<span class="lnr">817 </span><br />
+<span class="lnr">818 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>:<br />
+<span class="lnr">819 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;length<br />
+<span class="lnr">820 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;i=<span class="Constant">0</span><br />
+<span class="lnr">821 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Type">int</span>&nbsp;index=<span class="Constant">0</span><br />
+<span class="lnr">822 </span><br />
+<span class="lnr">823 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;length = self.hit_list.top+<span class="Constant">1</span>&nbsp;- self.hit_list.empty<br />
+<span class="lnr">824 </span><br />
+<span class="lnr">825 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.pack_res.whit = &lt;Whit *&gt; malloc (<span class="Statement">sizeof</span>(Whit) * length)<br />
+<span class="lnr">826 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.pack_res.length = length<br />
+<span class="lnr">827 </span><br />
+<span class="lnr">828 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">while</span>&nbsp;index &lt;= self.hit_list.top:<br />
+<span class="lnr">829 </span><br />
+<span class="lnr">830 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">if</span>&nbsp;self.hit_list.whit[index].rank &gt; -<span class="Constant">1</span>:<br />
+<span class="lnr">831 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.pack_res.whit[i] = self.hit_list.whit[index]<br />
+<span class="lnr">832 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i+=<span class="Constant">1</span><br />
+<span class="lnr">833 </span><br />
+<span class="lnr">834 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;index += <span class="Constant">1</span><br />
+<span class="lnr">835 </span><br />
+<span class="lnr">836 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">return</span>&nbsp;length<br />
+<span class="lnr">837 </span><br />
+<span class="lnr">838 </span><br />
+<span class="lnr">839 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;group_words(self):<br />
+<span class="lnr">840 </span><br />
+<span class="lnr">841 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">842 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;将words进行分组</span><br />
+<span class="lnr">843 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;增加查询效率</span><br />
+<span class="lnr">844 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;被 uni_docids 引用</span><br />
+<span class="lnr">845 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">846 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;<span class="Constant">'- begin to group words'</span><br />
+<span class="lnr">847 </span><br />
+<span class="lnr">848 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">pass</span><br />
+<span class="lnr">849 </span><br />
+<span class="lnr">850 </span><br />
+<span class="lnr">851 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;value(self):<br />
+<span class="lnr">852 </span><br />
+<span class="lnr">853 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">854 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;对每个docid</span><br />
+<span class="lnr">855 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;计算其文档主题相关度</span><br />
+<span class="lnr">856 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;同时　也包括对　rank的最后包装</span><br />
+<span class="lnr">857 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;对 pagerank 及　私有权值的支持</span><br />
+<span class="lnr">858 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">859 </span><br />
+<span class="lnr">860 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">pass</span><br />
+<span class="lnr">861 </span><br />
+<span class="lnr">862 </span><br />
+<span class="lnr">863 </span><br />
+<span class="lnr">864 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;sort(self):<br />
+<span class="lnr">865 </span><br />
+<span class="lnr">866 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">867 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;最终结果进行排序</span><br />
+<span class="lnr">868 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;差不多可以变成最终结果</span><br />
+<span class="lnr">869 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">870 </span><br />
+<span class="lnr">871 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;<span class="Constant">'&gt; sort res'</span><br />
+<span class="lnr">872 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.rank_sort.init(self.pack_res)<br />
+<span class="lnr">873 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.rank_sort.run()<br />
+<span class="lnr">874 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Comment">#开始将子类进行复原</span><br />
+<span class="lnr">875 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.initList()<br />
+<span class="lnr">876 </span><br />
+<span class="lnr">877 </span><br />
+<span class="lnr">878 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">def</span>&nbsp;<span class="Identifier">show_res</span>(self):<br />
+<span class="lnr">879 </span><br />
+<span class="lnr">880 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">881 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;展示最终结果</span><br />
+<span class="lnr">882 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">883 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;<span class="Constant">'+ getiin show_res'</span><br />
+<span class="lnr">884 </span><br />
+<span class="lnr">885 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;<span class="Constant">'the length of res is'</span>,self.pack_res.length<br />
+<span class="lnr">886 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">for</span>&nbsp;i <span class="Statement">in</span>&nbsp;<span class="Identifier">range</span>(self.pack_res.length):<br />
+<span class="lnr">887 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;self.pack_res.whit[i]<br />
+<span class="lnr">888 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<span class="lnr">889 </span><br />
+<span class="lnr">890 </span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="Statement">cdef</span>&nbsp;initList(self):<br />
+<span class="lnr">891 </span><br />
+<span class="lnr">892 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Constant">'''</span><br />
+<span class="lnr">893 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;将各种状态清0</span><br />
+<span class="lnr">894 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;准备下一次思索</span><br />
+<span class="lnr">895 </span><span class="Constant">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'''</span><br />
+<span class="lnr">896 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="Identifier">print</span>&nbsp;<span class="Constant">'+ getin initList'</span><br />
+<span class="lnr">897 </span><br />
+<span class="lnr">898 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.show_res()<br />
+<span class="lnr">899 </span><br />
+<span class="lnr">900 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;free( self.hit_list.whit )<br />
+<span class="lnr">901 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.length = <span class="Constant">0</span><br />
+<span class="lnr">902 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.top = -<span class="Constant">1</span><br />
+<span class="lnr">903 </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hit_list.empty = <span class="Constant">0</span><br />
+<span class="lnr">904 </span><br />
+</body>
+</html>

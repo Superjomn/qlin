@@ -300,7 +300,7 @@ cdef class Indexer:
                         #此处 为了将不同tag内的hit的pos完全分给开
                         #采用 自动添加 20 作为间隔
                         
-                        print list_idx,wid,doc,scoid, pos+abspos+20
+                        #print list_idx,wid,doc,scoid, pos+abspos+20
 
                         #print 'begin append'
 
@@ -732,7 +732,8 @@ cdef class Sort_hits:
 
         #初始化基础信息
         #负值hit_list长度
-        self.length = int(self.width[index])
+        self.length = self.width[index]
+
 
     def show(self):
 
@@ -787,7 +788,7 @@ cdef class Sort_hits:
 
         print 'sort in wordid'
 
-        self.show()
+        #self.show()
 
         #初始索引
         cur_step = 0
@@ -805,8 +806,8 @@ cdef class Sort_hits:
                 #将 wordID 推进
                 cur_wid = self.hit_list[i].wordID
 
-                print 'the did scope is'
-                print cur_step,i-1
+                #print 'the did scope is'
+                #print cur_step,i-1
 
                 hitSort.sort_in_did(cur_step , i-1)
 
@@ -846,11 +847,17 @@ cdef class Sort_hits:
         '''
         将 hit_list进行排序
         '''
-        cdef char *fname = ph + index
+        fn = ph + str(index) + '.hit'
+        cdef char *fname =  fn
 
-        cdef FILE *fp=<FILE *>fopen(ph,"rb")
+        print 'the fname is',fname
 
-        fread(self.hit_list , sizeof(Hit), self.width[index] ,fp)
+        cdef FILE *fp=<FILE *>fopen(fname,"wb")
+        print 'begin to save'
+
+        print 'begin to write'
+
+        fwrite(self.hit_list , sizeof(Hit), self.length ,fp)
 
         fclose(fp)
 
