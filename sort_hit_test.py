@@ -13,6 +13,5 @@ hit_sort.sort_wid('store/hits/',19)
 print 'the end list'
 print '-'*50
 
-hit_sort.show()
 
 

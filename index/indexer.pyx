@@ -706,6 +706,7 @@ cdef class Sort_hits:
         '''
 
         if(self.hit_list != NULL):
+
             print 'the former hits is not empty'
             print 'free the former hit_list'
             free(self.hit_list)

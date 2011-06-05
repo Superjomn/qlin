@@ -1,1 +1,58 @@
-<?xml version="1.0" ?><html><title text="中国农业大学统战部-首页"/><b><item text="我校何秀荣教授就中国..."/><item text="［快讯］我校武维华院..."/><item text="［简讯］统战部组织我..."/><item text="中国科学院院士娄成后..."/><item text="我校召开会议研讨加强..."/><item text="北京市侨办与我校侨界代表人士座谈"/><item text="我校统战部组织侨台..."/><item text="北京市侨联副主席苏..."/><item text="我校侨联学习校党委..."/><item text="我校侨台联举行迎国庆60周年座谈会"/><item text="中国农业大学台湾同..."/><item text="我校侨台联成员共庆新春佳节"/><item text="首都女教授协会换届..."/><item text="首都女教授协会章程"/><item text="首都女教授协会中国..."/><item text="党委统战部工作人员"/><item text="中央统战部"/><item text="中国台湾网"/><item text="台湾民主自治同盟"/><item text="中国西藏"/><item text="人民网"/><item text="京报网"/><item text="人民政协网"/><item text="中国作家网"/><item text=""/></b><h1/><h2/><h3/><a><item href="http://www.cau.edu.cn" name="农大主页"/><item href="http://www.cau.edu.cn/tzb/tzb/index.php" name="首页"/><item href="http://www.cau.edu.cn/tzb/tzb/write_message.php" name="留言"/><item href="http://www.cau.edu.cn/tzb/tzb/dlist.php" name="资料下载"/></a><content>中国农业大学统战部-首页 | 首页 | 农大主页 | 通知公告 | 无党派人士主题教育 | 统战知识 | 政策法规 | 工作制度 | 人大政协 | 人物风采 | 资料下载 | 留言 | 固定链接开始 民盟委员链接会开始 中国民主同盟中国农业大学委员会 九三学社中国农业大学委员会 中国民主促进会中国农业大学支部 中国农工民主党中国农业大学支部 中国致公党中国农业大学支部 中国国民党革命委员会中国农业大学支部 中国民主建国会中国农业大学支部 民盟委员会链接结束 固定链接结束 推荐主题开始 无党派人士主题教育 · 我校何秀荣教授就中国... · ［快讯］我校武维华院... · ［简讯］统战部组织我... · 中国科学院院士娄成后... · 我校召开会议研讨加强... 归国华侨联合会 · 北京市侨办与我校侨界代表人士座谈 · 我校统战部组织侨台... · 北京市侨联副主席苏... · 我校侨联学习校党委... · 我校侨台联举行迎国庆60周年座谈会 台湾同胞亲属联谊会 · 中国农业大学台湾同... · 我校侨台联成员共庆新春佳节 首都女教授协会农大分会 · 首都女教授协会换届... · 首都女教授协会章程 · 首都女教授协会中国... 党委统战部介绍 · 党委统战部工作人员 推荐主题结束 友情链接 中央统战部 中国台湾网 台湾民主自治同盟 中国西藏 人民网 京报网 人民政协网 中国作家网</content></html>
+<?xml version="1.0" ?><html><title text="中国农业大学产业办公室"/><b><item text="资产经营公司"/><item text="产业党总支"/><item text="大学科技园"/><item text="本站查询"/><item text="访问统计"/><item text="校产信箱"/><item text="欢迎访问中国农业大学资产经营管理公司"/><item text="通知公告"/><item text=""/><item text="新闻动态"/></b><h1/><h2/><h3/><a><item href="http://www.cau.edu.cn/cyc/cyc/admin" name="版权所有"/><item href="http://www.cau.edu.cn/cyc/cyc/cydzz.php" name="产业党总支"/><item href="http://www.cau.edu.cn/cyc/cyc/zcgl.php" name="欢迎访问中国农业大学资产经营管理公司"/><item href="http://www.cau.edu.cn/cyc/cyc/zcgl.php" name="资产经营公司"/></a><content>中国农业大学产业办公室 弹出广告管理代码
+&lt;script language=&quot;JavaScript&quot;&gt;
+    var delta=0.15
+    var collection;
+    function floaters() {
+        this.items    = [];
+        this.addItem    = function(id,x,y,content)
+                  {
+                    document.write('&lt;DIV id='+id+' style=&quot;Z-INDEX: 10; POSITION: absolute;  width:80px; height:60px;left:'+(typeof(x)=='string'?eval(x):x)+';top:'+(typeof(y)=='string'?eval(y):y)+'&quot;&gt;'+content+'&lt;/DIV&gt;');
+                    
+                    var newItem                = {};
+                    newItem.object            = document.getElementById(id);
+                    newItem.x                = x;
+                    newItem.y                = y; 
+                    this.items[this.items.length]        = newItem;
+                  }
+        this.play    = function()
+                  {
+                    collection                = this.items
+                    setInterval('play()',10);
+                  }
+        }
+        function play()
+        {
+            if(screen.width&lt;=800)
+            {
+                for(var i=0;i&lt;collection.length;i++)
+                {
+                    collection[i].object.style.display    = 'none';
+                }
+                return;
+            }
+            for(var i=0;i&lt;collection.length;i++)
+            {
+                var followObj        = collection[i].object;
+                var followObj_x        = (typeof(collection[i].x)=='string'?eval(collection[i].x):collection[i].x);
+                var followObj_y        = (typeof(collection[i].y)=='string'?eval(collection[i].y):collection[i].y); 
+                if(followObj.offsetLeft!=(document.body.scrollLeft+followObj_x)) {
+                    var dx=(document.body.scrollLeft+followObj_x-followObj.offsetLeft)*delta;
+                    dx=(dx&gt;0?1:-1)*Math.ceil(Math.abs(dx));
+                    followObj.style.left=followObj.offsetLeft+dx;
+                    } 
+                if(followObj.offsetTop!=(document.body.scrollTop+followObj_y)) {
+                    var dy=(document.body.scrollTop+followObj_y-followObj.offsetTop)*delta;
+                    dy=(dy&gt;0?1:-1)*Math.ceil(Math.abs(dy));
+                    followObj.style.top=followObj.offsetTop+dy;
+                    }
+                followObj.style.display    = '';
+            }
+        }    
+        
+    var theFloaters        = new floaters();
+    theFloaters.addItem('followDiv1','document.body.clientWidth-106',80,'&lt;br&gt;&lt;a href=http://www.cau.edu.cn/cyc/cyc/ad/index.html target=_blank&gt;&lt;img  src=&quot;images/ad.jpg&quot;  border=0&gt;&lt;/a&gt;');
+    theFloaters.addItem('followDiv2',6,80,'&lt;br&gt;&lt;a href=http://www.cau.edu.cn/cyc/cyc/ad/index.html target=_blank&gt;&lt;img src=&quot;images/ad.jpg&quot;  border=0&gt;&lt;/a&gt;'); 
+    theFloaters.play();    
+&lt;/script&gt; menu /menu 资产经营公司 产业党总支 大学科技园 本站查询 关键字 分　类 通知公告 新闻动态 合作项目 年度报告 校产通讯 服务指南 访问统计 本日访问次数 98 本月访问次数 19 本年访问次数 26533 校产信箱 欢迎访问中国农业大学资产经营管理公司 通知公告 校产关于先进基层党支部、优秀共产党员、优秀党务工作者推荐名单进行公示的通知 2011-05-09 关于做好2010年度我校校办产业统计年报工作的通知 2011-03-07 关于做好2011年企业财务月报工作的通知 2011-02-22 关于做好2010年度企业财务决算报表工作的通知 2011-01-04 关于拟推荐技术工人职业资格等级考试人员的公示 2010-12-28 关于召开产业系统职工联欢会的通知 2010-12-15 关于落实学校防火安全会议精神的通知 2010-12-01 2010年校产办职工考核公示 2010-11-23 2010年中国农业大学产业系统羽毛球比赛竞赛规程 2010-11-17 校产羽毛球小组单循环比赛抽签结果 2010-11-16 新闻动态 校产党支部联谊，感受红旗渠精神(图文) 2011-05-24 傅泽田出席2011中国创意农业国际合作与发展高层论坛新闻发布会 2011-04-22 我校参加2011年度高校资产公司管理骨干培训班 2011-04-20 胡锦涛亲临海南国际创意港考察  亲切接见我校创意农业研究中心团队。 2011-04-19 我校参加全国农业院校校办产业协会常务理事会 2011-04-19 2011年北京市校办产业工作会议召开 2011-03-14 资产经营公司召开2010年年会  校领导傅泽田、翟志席出席 2011-01-26 产业系统职工联欢会圆满举行 2011-01-19 傅泽田出席“爱我中华•奉献农业”全国农科教推优秀单位与个人表彰大会 2011-01-19 傅泽田出席中农金旺公司“馒首山农业科技示范园区”项目论证会 2011-01-18 中国农业大学校办产业办公室 
+            2004 版权所有 页面执行时间 
+            0.006576 秒 电话：62736902 传真：62736902</content></html>

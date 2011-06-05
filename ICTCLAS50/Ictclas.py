@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import sys
 import chardet
@@ -19,6 +18,7 @@ class Ictclas:
         length=len(s)
         #print s
         li=ictclas.process_str_ret_list(s,length,ictclas.eCodeType.UTF8)
+
         str=''
         for i in li:
             #print i.iStartPos
@@ -27,4 +27,9 @@ class Ictclas:
 
 if __name__=='__main__':
     c=Ictclas()
-    print c.split('中国，你好hello world,i am chunwei')
+    words = c.split('中国你好')
+    print words.split()
+
+    for w in words.split():
+        print w
+

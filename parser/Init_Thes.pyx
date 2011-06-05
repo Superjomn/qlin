@@ -1,4 +1,5 @@
 from libc.stdio cimport fopen,fclose,fwrite,FILE,fread
+
 from libc.stdlib cimport malloc,free
 
 DEF STEP=20
@@ -101,6 +102,8 @@ cdef class Init_thesaurus:
     cdef init_hashIndex hashIndex
     #词库长度 由 delloc 调用
     cdef int length
+    #words
+    cdef object words
 
     def __cinit__(self,char *ph):
 
@@ -108,6 +111,8 @@ cdef class Init_thesaurus:
         传入词库地址
         初始化词库
         '''
+
+        print '+ get into the Init_Thes'
 
         #一级hash 参考表 初始化
         self.hashIndex = init_hashIndex("store/index_hash.b","store/word_wide.txt")
@@ -117,14 +122,15 @@ cdef class Init_thesaurus:
             int l
 
         f=open(ph)
-        words=f.read().split()
+        self.words=f.read().split()
         f.close()
 
         #词的数量 
-        self.length=len(words)
+        self.length=len(self.words)
 
+        #print 'the length of the wordbar is',self.length
         #开始分配词库内存空间
-        cdef char  **li=<char **>malloc( sizeof(char *) * self.length )
+        cdef char  **li=<char **>malloc( sizeof(char *) * (self.length + 100) )
 
         print '初始化词库 分配了',sizeof(li)/sizeof(char *),'块内存'
 
@@ -139,15 +145,17 @@ cdef class Init_thesaurus:
         #开始对每个词分配内存 
         #并且分配内存
 
-        for i,w in enumerate(words):
-
+        for i in range(self.length):
             #self.word_list[i]=<char *>malloc( sizeof(char) * len(w) )
             #print 'the word is '
-
             #print w
-            self.word_list[i]=w
+            #print i,
+
+            self.word_list[i]=self.words[i]
 
             #print self.word_list[i]
+
+
 
     def __dealloc__(self):
 
@@ -221,9 +229,9 @@ cdef class Init_thesaurus:
         #print '开始 pos',pos
 
         if pos!=-1 and pos<STEP:
-            print '开始>cur=self.hashIndex.hi[pos]'
+            #print '开始>cur=self.hashIndex.hi[pos]',pos
             cur=self.hashIndex.hi[pos]
-            print 'cur< OK '
+            #print 'cur< OK ',cur.left,cur.right
 
         else:
             print "the word is not in wordbar or pos wrong"
@@ -233,6 +241,25 @@ cdef class Init_thesaurus:
         fir=cur.left
         end=cur.right
         mid=fir
+        '''
+        print 'hello world'
+        print 'fir ,end',fir,end
+        print 'the 1th word is',self.v(self.word_list[1])
+        print '-'*50
+
+        for i in range(self.length-1):
+            print i,self.v(self.word_list[i])
+        '''
+        #print 'length',self.length
+
+        #print 'trying ...',
+
+        #print self.v(self.word_list[fir])
+
+        #print 'the fir end gv',self.v(self.word_list[fir]),self.v(self.word_list[end]),dv
+
+        if dv > self.v(self.word_list[end]):
+            return 0
 
         #print '词库: fir,end,mid',fir,end,mid
 
