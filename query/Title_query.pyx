@@ -10,12 +10,6 @@
 #
 ##################################################
 
-import sys
-reload(sys)
-sys.setdefaultencoding('utf8')
-
-
-
 from parser.Init_Thes import Init_thesaurus , init_hashIndex
 
 from libc.stdlib cimport realloc,malloc,free
@@ -145,8 +139,8 @@ cdef class Whit_list:
         #若whit_list　内存未分配
         #则进行分配 
         if self.hit_list.whit == NULL:
-            print 'the whit_list is empty'
-            print 'begin to malloc'
+            #print 'the whit_list is empty'
+            #print 'begin to malloc'
 
             self.hit_list.whit = <Whit *>malloc( Whit_init_num * sizeof(Whit) )
             self.hit_list.top = -1
@@ -187,7 +181,7 @@ cdef class Whit_list:
         cdef:
             int i
         
-        print '+ whit_list -append'
+        #print '+ whit_list -append'
         
         self.hit_list.top += 1
         self.hit_list.whit[self.hit_list.top].docID = hit.docID
@@ -195,7 +189,7 @@ cdef class Whit_list:
 
         #计算权质
         #初始化时  直接赋值
-        print '+whit_list - append',self.hit_list.top,self.hit_list.whit[self.hit_list.top].docID
+        #print '+whit_list - append',self.hit_list.top,self.hit_list.whit[self.hit_list.top].docID
 
         self.hit_list.whit[self.hit_list.top].rank = sc(hit.score)# * SCORE_EACH    
         
@@ -224,13 +218,13 @@ cdef class Whit_list:
         #外界逐次扫描
         #同时内部也逐步扫描
     
-        print '+whit_list -add'
+        #print '+whit_list -add'
 
         cdef:
             int j
             int cur_did
 
-        print '+ whit_list - add'
+        #print '+ whit_list - add'
 
         #去除无用记录 
         while self.hit_list.whit[self.scan_id].rank ==-1 and self.scan_id <= self.hit_list.top:
@@ -410,14 +404,14 @@ cdef class Hit_find:
             self.hit_list=<Hit *>malloc(sizeof(Hit) * self.width[index])
 
             #读入数据
-            print 'begin read the file'
+            #print 'begin read the file'
 
             #fname = self.fdir +ind +'.hit'
             fname = 'store/hits/' + ind + '.hit'
             
             fn = fname
 
-            print 'the fname is',fn
+            #print 'the fname is',fn
 
             fp=<FILE *>fopen(fn,"rb")
             fread(self.hit_list , sizeof(Hit), self.width[index] ,fp)
@@ -482,7 +476,7 @@ cdef class Hit_find:
 
         i=self.pos_mid_wid()
 
-        print 'get mid wid',i
+        #print 'get mid wid',i
         
         j=i
 
@@ -512,7 +506,7 @@ cdef class Hit_find:
         首次初始化whit空间
         以后的词均在此空间内进行过滤便可
         '''
-        print '+hit_list - init_whit_list'
+        #print '+hit_list - init_whit_list'
 
         cdef:
             #当前搜索的did
@@ -527,7 +521,7 @@ cdef class Hit_find:
 
         cur_did = self.hit_list[self.wleft_id].docID - 1
         
-        print 'leftid rigthid',self.wleft_id,self.wright_id
+        #print 'leftid rigthid',self.wleft_id,self.wright_id
 
         i=self.wleft_id
         #初始化第一个did
@@ -537,7 +531,7 @@ cdef class Hit_find:
                 pass
 
             else:
-                print '- whit_list append',cur_did
+                #print '- whit_list append',cur_did
                 self.whit_list.append(self.hit_list[i])
                 cur_did = self.hit_list[i].docID
 
@@ -794,10 +788,10 @@ cdef class Query:
 
         #对word进行分组
         
-        print 'begin to find words',
-        print para
+        #print 'begin to find words',
+        #print para
 
-        print cdt.detect(para)
+        #print cdt.detect(para)
 
         self.word_split(para)
         self.group_words()
@@ -810,24 +804,24 @@ cdef class Query:
             #同时自动收录value
             #hit_find会自动对父亲的hit存储池进行修改扩充
 
-            print '- to find',word
+            #print '- to find',word
 
             wid = self.thes.find(word)
-            print 'the wid is',wid
+            #print 'the wid is',wid
 
             #对词的存在性进行分析
             if wid == -1:
                 return False
             
             #初始化 hit查找库
-            print '- init hit_find'
+            #print '- init hit_find'
             self.hit_find.flush(wid)
 
             self.hit_find.find(word) 
 
         #查找完毕 开始后续处理
         #结果加工
-        print 'begin to pack res'
+        #print 'begin to pack res'
 
         if self.res_pack() == -1:
             return False
@@ -906,7 +900,7 @@ cdef class Query:
         差不多可以变成最终结果
         '''
 
-        print '> sort res'
+        #print '> sort res'
         self.rank_sort.init(self.pack_res)
         self.rank_sort.run()
         #开始将子类进行复原
@@ -931,7 +925,7 @@ cdef class Query:
         将各种状态清0
         准备下一次思索
         '''
-        print '+ getin initList'
+        #print '+ getin initList'
 
         self.show_res()
 
