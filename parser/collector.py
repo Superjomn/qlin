@@ -33,8 +33,18 @@ class collector():
         self.urltest=urltest.Urltest()
         self.collector=parser.HtmlParser.Collector()
         self.collector.init(html)
-        
+
+        self.str_test= re.compile("(\w|&|'|=)") 
                
+
+    def stest(self,text):
+
+        '''
+        过滤非法字符
+        '''
+        return self.str_test.sub('',text)
+
+        
     def clear_other_node(self):
 
         '''
@@ -68,7 +78,7 @@ class collector():
         
         title=self.dd.createElement('title')
         html.appendChild(title)
-        title.setAttribute('text',titleText)
+        title.setAttribute('text',self.stest(titleText))
 
         #生成b
         bb=self.collector.get_node('b')
@@ -77,7 +87,7 @@ class collector():
         for i in bb:
 
             ii=self.dd.createElement('item')
-            ii.setAttribute('text',i)
+            ii.setAttribute('text',self.stest(i))
             b.appendChild(ii)
 
         html.appendChild(b)
@@ -89,7 +99,7 @@ class collector():
         for i in bb:
 
             ii=self.dd.createElement('item')
-            ii.setAttribute('text',i)
+            ii.setAttribute('text',self.stest(i))
             b.appendChild(ii)
 
         html.appendChild(b)
@@ -101,7 +111,7 @@ class collector():
         for i in bb:
 
             ii=self.dd.createElement('item')
-            ii.setAttribute('text',i)
+            ii.setAttribute('text',self.stest(i))
             b.appendChild(ii)
 
         html.appendChild(b)
@@ -112,7 +122,7 @@ class collector():
 
         for i in bb:
             ii=self.dd.createElement('item')
-            ii.setAttribute('text',i)
+            ii.setAttribute('text',self.stest(i))
             b.appendChild(ii)
 
         html.appendChild(b)
@@ -133,7 +143,7 @@ class collector():
 
             if url:
                 aindex=self.dd.createElement('item')
-                aindex.setAttribute('name',i)
+                aindex.setAttribute('name',self.stest(i))
                 #aindex.setAttribute('href',self.a_trav(aa[i]))
                 aindex.setAttribute('href',url)
                 a.appendChild(aindex)
@@ -160,7 +170,7 @@ class collector():
 
         cc=self.dd.createElement('content')
 
-        ctext=self.dd.createTextNode(content)
+        ctext=self.dd.createTextNode(self.stest(content))
 
         #print '----------------'
         #print content

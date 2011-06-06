@@ -12,7 +12,9 @@ strr='出版社图书馆'
 query.find_words(strr)
 
 query.find_words('你好中国')
+print query.get_res(1)
 
 query.find_words('理学院')
 
+print query.get_res(1)
 

@@ -86,6 +86,20 @@ DEF SCORE_H1 = 2
 DEF SCORE_A = 5
 DEF SCORE_CONTENT = 6
 
+
+
+####################################
+#       前台相关 
+#       搜索中 或者 与 django交互 
+####################################
+
+#每页显示结果数目
+DEF Page_each = 8
+
+
+
+
+
 cdef inline float sc(int score):
 
     '''
@@ -537,7 +551,7 @@ cdef class Hit_find:
 
             i+=1
 
-        self.whit_list.show()
+        #self.whit_list.show()
 
     
      
@@ -674,13 +688,13 @@ cdef class RankSorter:
 
         while low<high:
 
-            while low<high and self.gvalue( self.dali[high] ) >= self.gvalue( v ):
+            while low<high and self.gvalue( self.dali[high] ) <= self.gvalue( v ):
 
                 high-=1
 
             self.dali[low]=self.dali[high]
 
-            while low<high and self.gvalue( self.dali[low] )<=self.gvalue( v ):
+            while low<high and self.gvalue( self.dali[low] )>=self.gvalue( v ):
                 low+=1
             self.dali[high]=self.dali[low]
 
@@ -851,8 +865,12 @@ cdef class Query:
             int length
             int i=0
             int index=0
-
+        #结果有效长度
         length = self.hit_list.top+1 - self.hit_list.empty
+        
+        #消除之前结果
+        if self.pack_res.whit != NULL:
+            free(self.pack_res.whit)
 
         self.pack_res.whit = <Whit *> malloc (sizeof(Whit) * length)
         self.pack_res.length = length
@@ -927,10 +945,58 @@ cdef class Query:
         '''
         #print '+ getin initList'
 
-        self.show_res()
+        #self.show_res()
 
         free( self.hit_list.whit )
         self.hit_list.length = 0
         self.hit_list.top = -1
         self.hit_list.empty = 0
+
+
+    def get_res(self,int page_id):
+        
+        '''
+        最终得到结果
+        直接与前台django进行沟通
+        仅仅返回docIDs
+        返回数量及第n页的docIDs
+        
+        默认 page 从1 开始
+        '''        
+        cdef:
+            int page_start
+            int page_end
+            int length
+            object res
+            int i
+        
+        res = {}
+
+        docIDs = []
+
+        length = self.pack_res.length
+
+        if (page_id-1) * Page_each > length:
+            return -1
+
+        page_start = (page_id - 1) * Page_each
+        page_end = page_id * Page_each
+
+        if page_end > length-1:
+            page_end = length -1
+
+        res.setdefault('length',length)
+        
+        i = page_start
+        
+        while i <= page_end:
+            docIDs.append(self.pack_res.whit[i].docID)  
+            i += 1
+
+        res.setdefault('length',length)
+        res.setdefault('docIDs',docIDs)
+
+        return res
+
+        
 
