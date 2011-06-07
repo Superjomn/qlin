@@ -220,7 +220,6 @@ cdef class RankSorter:
 
         self.dali[low]=v
 
-        return low
 
 
     cdef void run(self):
@@ -265,7 +264,7 @@ cdef class Query:
         '''
         ##########################################
         #wlist 初始化
-        print 'wlist 初始化'
+        #**print 'wlist 初始化'
 
         self.wlist.whit = <Whit *>malloc(Whit_init_num * sizeof(Whit) )
         self.plist.whit = <Whit *>malloc(20 * sizeof(Whit))
@@ -465,6 +464,7 @@ cdef class Query:
         以后的词均在此空间内进行过滤便可
         '''
         #print '+hit_list - init_whit_list'
+        print '初始化whit'
 
         cdef:
             #当前搜索的did
@@ -476,8 +476,10 @@ cdef class Query:
         #确定wid边界
         #self.pos_wid_scope()
         #初始时 cur_did 故意不同
+        '''
         if self.wlist.whit == NULL:
             self.wlist.whit = <Whit *>malloc(Whit_init_num * sizeof(Whit) )
+        '''
 
         cur_did = self.hlist.hit[self.wlist.left].docID - 1
         
@@ -538,6 +540,7 @@ cdef class Query:
         if self.wlist.top == -1:
             #此处需要确定　wid !!!!?????????????????????
             #**print '开始初始化 wlist in wlist'
+            print '从find进入 init)whit_list'
             self.init_whit_list()
             #**print 'succeed init_whit_list'
             return
@@ -557,18 +560,21 @@ cdef class Query:
          
         while i <= self.wlist.right:
             #在wid内进行遍历
+            print 'search hit',i,self.hlist.hit[i].wordID, self.hlist.hit[i].docID
             if self.hlist.hit[i].docID == cur_did:
                 pass
             else:
-                res = self.add(self.hlist.hit[i])
+                #传入i 便于判断修改
+                res = self.add(self.hlist.hit[i],i)
                 cur_did = self.hlist.hit[i].docID
                 
                 #**print 'add',cur_did
                 #**print '结果为',res
-                
-                if res == 2:
-                    #查找外围范围溢出
+
+                if res == -3 or res == -2 or res == 2:
+                    # -3:切头内大   -2:晴空 外大   2:常规溢出
                     break
+                
 
             i+=1
     
@@ -585,8 +591,15 @@ cdef class Query:
         '''
         有word未全部命中
         在 scanid 上面的全部削去
+        但是 中间会有松散的不合格
+        add中也需要做修改
         '''
-        pass
+
+        while self.wlist.scan_id <= self.wlist.top:
+            if self.wlist.whit[self.wlist.scan_id].rank != -1:
+                self.wlist.whit[self.wlist.scan_id].rank = -1
+                self.wlist.empty += 1
+            self.wlist.scan_id += 1
 
     cdef void  append(self, Hit hit):
         
@@ -595,6 +608,7 @@ cdef class Query:
         在初始化wlist时候使用
         将 hit_list 自动加入到 whit_list中
         '''
+        print 'append',hit.wordID,hit.docID
         cdef Whit *base
         cdef:
             int i
@@ -625,7 +639,7 @@ cdef class Query:
         #print 'firstly get length %d in append'%self.wlist.top
 
 
-    cdef short add(self,Hit hit):
+    cdef short add(self,Hit hit,int i):
 
         '''
         将剩余词汇添加到总hit_list记录中
@@ -639,6 +653,8 @@ cdef class Query:
         #采用渐次扫描算法
         #外界逐次扫描
         #同时内部也逐步扫描
+        
+        print 'add',hit.docID
     
         cdef:
             int j
@@ -646,43 +662,70 @@ cdef class Query:
 
         #**print 'add 里面 的 scan_id',self.wlist.scan_id
 
+        #**print '> hit and index',i,hit.docID,hit.wordID
+        #**print '> now scan_id_docID',self.wlist.whit[self.wlist.scan_id].docID
 
         #去除无用记录 
         while self.wlist.whit[self.wlist.scan_id].rank ==-1 and self.wlist.scan_id <= self.wlist.top:
             #过滤无用记录　rank==-1
             self.wlist.scan_id += 1
 
+        cur_did = self.wlist.whit[self.wlist.scan_id].docID
+
+        print 'now wlist cur  docID is',cur_did
+
         #一直到最后都是 -1
         if self.wlist.scan_id > self.wlist.top:
             return 2
+        
+        #外界都比内部大
+        if i == self.wlist.left and hit.docID > self.wlist.whit[self.wlist.top\
+            ].docID:
+            self.wlist.empty = self.wlist.top + 1
+            return -3
 
-        cur_did = self.wlist.whit[self.wlist.scan_id].docID
+        if i == self.wlist.right and hit.docID < self.wlist.whit[ 0 ].docID:
+            self.wlist.empty = self.wlist.top + 1
+            return -3
+        #左边可以工作 但右边不能完全屏蔽 
+        #有辅助的greaterscanid
         
         #首次某种
-        if hit.docID > self.wlist.whit[self.wlist.top].docID:
+        if hit.docID > cur_did:
             #docID超过内部最大限度
             #不需要继续扫描下去
-            return 2  
+            #需要主动对齐
+            while self.wlist.scan_id < self.wlist.top and self.wlist.whit[\
+                self.wlist.scan_id + 1 ].docID <= hit.docID:
+                #转到比 hit小的最后一个状态
+                if self.wlist.whit[ self.wlist.scan_id ].rank != -1:
+                    self.wlist.whit[ self.wlist.scan_id ].rank = -1
+                    self.wlist.empty += 1
+                self.wlist.scan_id += 1
+            #现在 cur_docid >= hit
 
-        if hit.docID == cur_did:
+        #将 scan_id 更新一下
+        while self.wlist.whit[self.wlist.scan_id].rank ==-1 and self.wlist.scan_id <= self.wlist.top:
+            #过滤无用记录　rank==-1
+            self.wlist.scan_id += 1
+
+        if self.wlist.scan_id > self.wlist.top:
+            return 2
+        
+
+        if hit.docID == self.wlist.whit[ self.wlist.scan_id ].docID :
+            print 'hit cur_did equals',self.wlist.whit[ self.wlist.scan_id ].docID
             self.wlist.whit[self.wlist.scan_id].rank += sc(hit.score)# * SCORE_ADD
             self.wlist.scan_id += 1
-
             return 0
-
-        elif hit.docID > cur_did:
-            #外围已经超过　说明当前记录未命中
-            self.wlist.whit[self.wlist.scan_id].rank = -1
-            #无效记录数目 + 1
-            self.wlist.empty += 1
-            self.wlist.scan_id += 1
-            #内部 scan_id 过小
-            return 1
 
         else:
             #外界 scan_id 过小
+            #让 其 增加 缩影
             return -1
-            
+
+
+
             
     cdef init_scanID(self): 
         '''
@@ -708,10 +751,12 @@ cdef class Query:
             print '将wlist清空'
             free(self.wlist.whit)'''
 
+        self.initData()
+
         for word in words:
             #对每个词进行处理
             wid = self.thes.find(word)
-            print 'find',word,wid
+            #**print 'find',word,wid
 
             if wid == 0:
                 return False
@@ -728,7 +773,11 @@ cdef class Query:
             self.init_hit_file(hashvalue)
 
             #开始进行查找操作
+            print 'find_words>begin to find',word
+            print '此时 wlist.top:',self.wlist.top
             self.find(word)
+
+    
 
             
     cdef short pack_res(self):
@@ -854,7 +903,7 @@ cdef class Query:
 
         length = self.plist.length
         
-        print '>> res get length',length
+        #**print '>> res get length',length
 
         if (page_id-1) * Page_each > length:
             return -1
@@ -879,6 +928,8 @@ cdef class Query:
         #运行时态内存清理
         #**print '进行内存消除'
         self.initData()
+        print '此次思索结束 wlist.top',self.wlist.top
+        print '-'*50
 
         return res
 
