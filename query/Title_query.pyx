@@ -5,8 +5,7 @@
 #       Query: 查询库
 #       qlin 内网全文搜索引擎
 #       Created by Chunwei
-#           in memory of a friend 
-#               Best Wishes to Lavender!
+#           in memory of a friend #               Best Wishes to Lavender!
 #
 ##################################################
 
@@ -843,6 +842,7 @@ cdef class Query:
         #结果排序
         print 'begin to sort res'
         self.sort()
+        print 'succeed to sort res in find_words'
 
         return True
 
@@ -918,11 +918,14 @@ cdef class Query:
         差不多可以变成最终结果
         '''
 
-        #print '> sort res'
+        print '> sort res'
         self.rank_sort.init(self.pack_res)
         self.rank_sort.run()
         #开始将子类进行复原
-        self.initList()
+        print '>succeed sort res'
+        print 'begin to init list'
+        #self.initList()
+        print 'succeed init list'
 
 
     def show_res(self):
@@ -946,8 +949,9 @@ cdef class Query:
         #print '+ getin initList'
 
         #self.show_res()
-
+        print 'begin to free the wlist'
         free( self.hit_list.whit )
+        print 'end free the wlist'
         self.hit_list.length = 0
         self.hit_list.top = -1
         self.hit_list.empty = 0
@@ -963,6 +967,8 @@ cdef class Query:
         
         默认 page 从1 开始
         '''        
+        print 'begin to get res'
+
         cdef:
             int page_start
             int page_end

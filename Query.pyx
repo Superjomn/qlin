@@ -1,4 +1,4 @@
-from query.Title_query import Query
+from query.query import Query
 
 import sqlite3 as sq
 
@@ -31,8 +31,8 @@ cdef class Res_Query:
         '''
         查找主程序
         '''
-        self.query.find_words(strr)
-        return self.query.get_res(page_id)
+
+        return self.query.get_res(strr,page_id)
 
 
     def gres(self,char *strr,int page_id):
@@ -40,14 +40,19 @@ cdef class Res_Query:
         self.res = {}
         
         cdef object query_res=self.find(strr,page_id)
-        print query_res
+        print 'get res',query_res
+
+        if not query_res:
+            return False
+
+        
         cdef int length = query_res['length']
 
         self.res.setdefault('length',length)
         
-
         res_li = [] 
         for docid in query_res['docIDs']:
+            print 'now get ',docid
             self.cu.execute("select title,des,intro from lib where docID =%d"%docid)
             res_li.append(self.cu.fetchone())
 

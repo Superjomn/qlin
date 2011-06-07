@@ -165,7 +165,7 @@ cdef class Init_thesaurus:
 
         print 'begin to delete all the C spaces'
 
-        cdef char* point
+        #cdef char* point
         cdef int i=0
 
         #释放每一个词的空间
@@ -173,7 +173,8 @@ cdef class Init_thesaurus:
             free(self.word_list[i])'''
 
         #释放整个词库 pointer 的空间
-        free(self.word_list)
+        #if self.word_list != NULL:
+        #free(self.word_list)
 
 
     cdef double v(self,data):

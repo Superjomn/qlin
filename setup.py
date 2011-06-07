@@ -4,7 +4,5 @@ from Cython.Distutils import build_ext
 
 setup(
 cmdclass = {'build_ext': build_ext},
-ext_modules = [Extension("query", ["query.pyx"])]
-
-#ext_modules = [Extension("Title_query", ["Title_query.pyx"])]
+ext_modules = [Extension("Query", ["Query.pyx"])]
 )
