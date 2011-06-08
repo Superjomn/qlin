@@ -7,6 +7,9 @@ from libc.stdio cimport fopen, fwrite, fread,fclose,FILE
 from parser.Init_Thes import Init_thesaurus , init_hashIndex
 
 
+import sqlite3 as sq
+
+
 
 DEF STEP=20
 
@@ -185,6 +188,11 @@ cdef class Indexer:
 
     cdef object hash_index
 
+    #数据库相关
+    cdef object cx
+    
+    cdef object cu
+
     #词库
     def __cinit__(self,char *wph,char *fph,char *toph):
 
@@ -202,6 +210,11 @@ cdef class Indexer:
         self.thes = Init_thesaurus(wph)
 
         self.hash_index = init_hashIndex('store/index_hash.b','store/word_wide.txt')
+
+
+        self.cx = sq.connect('store/chun.sqlite')
+
+        self.cu = self.cx.cursor()
 
 
     cdef int loc_list(self,hashvalue):
@@ -277,13 +290,28 @@ cdef class Indexer:
 
             tags=c.split('@chunwei@')
             abspos=0
+            
+            if scoid == 1:
+                #开始添加des 索引
+                self.add_des_index(self,docID)
 
             for scoid,tag in enumerate(tags):
 
                 #对每个标签进行处理
-                words=tag.split()
+                words = []
 
+                ########################
+                #
+                #   开始添加 des
+                #
+                ########################
+
+                if scoid == 1:
+                    words += self.get_split_des_words(doc)
+
+                words += tag.split()
                 
+
                 for pos,word in enumerate(words):
 
                     #开始扫面每一个tag ?????????????????????
@@ -318,17 +346,32 @@ cdef class Indexer:
                             self.add_save(list_idx)
 
 
+
                             print 'begin to empty the stack'
 
                             #将相应list清空
                             self.hit_list.empty(list_idx)
-
 
         #将剩余的hits进行存储
         #一些list hit 数目不超过 max_size
         for i in range(List_num):
             self.add_save(i)
             
+
+    cdef get_split_des_words(self,docID):
+        
+        '''
+        添加 des 的 hash
+        '''
+        self.cu.execute("select split_des from lib where docID = %d"%docID)
+
+        li= self.cu.fetchone()
+        if li:
+            print 'get des',li
+            return li[0].split()
+        else:
+            return ['']
+
 
 
     cdef sort(self):
