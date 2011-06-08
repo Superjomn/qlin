@@ -2,50 +2,56 @@ from query.query import Query
 
 import sqlite3 as sq
 
+from ICTCLAS50.Ictclas import Ictclas
 
 
 cdef class Res_Query:
     
     '''
-前台连接主程序
-'''
+    前台连接主程序
+    '''
     cdef:
         object query
         object cx
         object cu
         object res
-        object ict
+        #分开的词
         object words
+        object ict
 
     def __cinit__(self):
         
         '''
-init
-'''
+        init
+        '''
         self.query = Query('store/hits','store/hits/hit_size.txt')
+
+        self.ict=Ictclas('ICTCLAS50/') 
 
         self.cx = sq.connect('store/chun.sqlite')
 
         self.cu = self.cx.cursor()
-
         
 
     cdef object find(self,char *strr,int page_id):
         
         '''
-查找主程序
-'''
+        查找主程序
+        '''
 
         return self.query.get_res(strr,page_id)
 
 
     def gres(self,char *strr,int page_id):
 
-        print 'search for',strr
+        #进行分词 准备高亮结果
+        #self.words = self.ict.split(strr).split()
+
         self.res = {}
         
         cdef object query_res=self.find(strr,page_id)
         #print 'get res',query_res
+        cdef object hits
 
         if not query_res:
             return False
@@ -54,28 +60,41 @@ init
 
         self.res.setdefault('length',length)
         
-        res_li = []
+        res_li = [] 
+        
         for docid in query_res['docIDs']:
             #print 'now get ',docid
             self.cu.execute("select title,des,intro,url from lib where docID =%d"%docid)
-            res=[]
             hits = self.cu.fetchone()
 
-            res.append(self.add_hi(hits[0]) )
-            res.append(self.add_hi(hits[1]) )
-            res.append(hits[2])
-            res.append(hits[3])
+            hits[0]=self.highlight(hits[0])
+            hits[1]=self.highlight(hits[1])
+                
 
-            res_li.append(res)
+            res_li.append(hits)
 
         self.res.setdefault('res_list',res_li)
 
         return self.res
 
-    cdef add_hi(self,text):
-        for w in self.query.get_words():
-            print 'now replace',text
-            text=text.replace(w,'<span class="hi">'+w+'</span>')
-        return text
+
+    cdef add_highlight(self,text):
+
+        '''
+        添加高亮度
+        '''
+        for w in self.words:
+            text = text.replace(w,'<span class="hi">'+w+'</span>')
+
+        
 
 
+
+        
+
+
+
+
+
+
+        

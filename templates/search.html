@@ -71,6 +71,9 @@
 	width:100%;
 	padding:0.2em;
 	}
+    .hi{
+        color:red;
+    }
 	#page_nav a:hover{
 	text-decoration:none;
 	}
@@ -93,6 +96,7 @@
         {%for res in res_list%}
 
             <div class="res">
+                {%autoescape off%}
                 <h2><a href="{{res.3}}">
                         {%if res.1%}
                             {{res.1}}
@@ -101,6 +105,7 @@
                         {%endif%} 
                     </a></h2>
                 <div class="des">{{res.0}}</div>
+                {%endautoescape%}
 
                 <div class="intro">{{res.2}}</div><!-- intro -->
 

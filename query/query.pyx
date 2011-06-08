@@ -266,6 +266,7 @@ cdef class Query:
     cdef object ict
     cdef object thes
     cdef RankSorter ranksort
+    cdef object words
 
     cdef:
         int wid
@@ -757,7 +758,7 @@ cdef class Query:
             int wid
             double hashvalue
         
-        words = self.ict.split(para).split()
+        self.words = self.ict.split(para).split()
         #))print 'get words',words
 
         '''if self.wlist.whit != NULL:
@@ -766,7 +767,7 @@ cdef class Query:
 
         self.initData()
 
-        for word in words:
+        for word in self.words:
             #对每个词进行处理
             wid = self.thes.find(word)
             #))print 'find',word,wid
@@ -878,6 +879,9 @@ cdef class Query:
         '''
 
         #self.plist.length = 0
+
+    def get_words(self):
+        return self.words
 
 
     def get_res(self,char *para,int page_id):
