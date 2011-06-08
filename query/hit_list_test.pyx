@@ -49,7 +49,8 @@ cdef class  hit_list:
         print 'begin to show it'
         print 'get length',self.length
         for i in range(self.length):
-            print i,self.hit_list[i].wordID,self.hit_list[i].docID
+            print 'wordID,docID,scoid,pos',\
+            i,self.hit_list[i].wordID,self.hit_list[i].docID,self.hit_list[i].score,self.hit_list[i].pos
 
 
 

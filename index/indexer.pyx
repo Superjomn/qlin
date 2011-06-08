@@ -6,6 +6,7 @@ from libc.stdio cimport fopen, fwrite, fread,fclose,FILE
 
 from parser.Init_Thes import Init_thesaurus , init_hashIndex
 
+from ICTCLAS50.Ictclas import Ictclas
 
 import sqlite3 as sq
 
@@ -56,6 +57,8 @@ cdef class Hit_lists:
         int top
         List hit_list[List_num]
 
+        object ict
+
     def __cinit__(self):
 
         '''
@@ -63,6 +66,8 @@ cdef class Hit_lists:
         '''
 
         print '>begin init List space'
+
+        self.ict = Ictclas('ICTCLAS50/')
 
         cdef:
             int i
@@ -193,6 +198,8 @@ cdef class Indexer:
     
     cdef object cu
 
+    cdef object ict
+
     #词库
     def __cinit__(self,char *wph,char *fph,char *toph):
 
@@ -204,6 +211,7 @@ cdef class Indexer:
         self.fph=fph
         self.toph=toph
 
+        self.ict=Ictclas('ICTCLAS50/') 
         #初始化 Hit_list
         self.hit_list = Hit_lists()
         #词库
@@ -289,27 +297,14 @@ cdef class Indexer:
             f.close()
 
             tags=c.split('@chunwei@')
+
             abspos=0
-            
-            if scoid == 1:
-                #开始添加des 索引
-                self.add_des_index(self,docID)
 
             for scoid,tag in enumerate(tags):
 
                 #对每个标签进行处理
-                words = []
 
-                ########################
-                #
-                #   开始添加 des
-                #
-                ########################
-
-                if scoid == 1:
-                    words += self.get_split_des_words(doc)
-
-                words += tag.split()
+                words = tag.split()
                 
 
                 for pos,word in enumerate(words):
@@ -327,30 +322,43 @@ cdef class Indexer:
                     if wid != 0:
                         #此处 为了将不同tag内的hit的pos完全分给开
                         #采用 自动添加 20 作为间隔
-                        
-                        #print list_idx,wid,doc,scoid, pos+abspos+20
-
-                        #print 'begin append'
-
-                        if self.hit_list.ap(list_idx,wid,int(doc),scoid, pos+abspos+20 ) == 1:
-
+                        if self.hit_list.ap(list_idx,wid,int(doc),scoid, abspos ) == 1:
                             pass
-
                         else:
-
                             #将 list_idx 对应的list写入到文件
-
-                            print '-'*50
-                            print 'the stack is full'
-
                             self.add_save(list_idx)
-
-
-
-                            print 'begin to empty the stack'
-
                             #将相应list清空
                             self.hit_list.empty(list_idx)
+
+                    #地址采用真实地址
+                    abspos += len(word)
+
+
+            ########################
+            #
+            #   开始添加 des
+            #
+            ########################
+            #开始添加des 索引
+            #为了不影响 高亮显示 附加在最后一个
+            words = self.get_split_des_words(doc)
+
+            print words
+
+            for word in words:
+                wid = self.thes.find(word)
+
+                list_idx = self.loc_list(word)
+
+                if wid != 0:
+                    if self.hit_list.ap(list_idx,wid,int(doc),-1, abspos ) == 1:
+                        pass
+                    else:
+                        #将 list_idx 对应的list写入到文件
+                        self.add_save(list_idx)
+                        #将相应list清空
+                        self.hit_list.empty(list_idx)
+                abspos += len(word)
 
         #将剩余的hits进行存储
         #一些list hit 数目不超过 max_size
@@ -363,12 +371,14 @@ cdef class Indexer:
         '''
         添加 des 的 hash
         '''
-        self.cu.execute("select split_des from lib where docID = %d"%docID)
+        self.cu.execute("select des from lib where docID = %d"%int(docID))
 
         li= self.cu.fetchone()
-        if li:
-            print 'get des',li
-            return li[0].split()
+
+        if li[0]:
+            print 'get des',li[0]
+            print 'split',self.ict.split( str(li[0]) )
+            return self.ict.split( str(li[0]) ).split()
         else:
             return ['']
 

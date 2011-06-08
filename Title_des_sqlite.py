@@ -94,6 +94,20 @@ class Title_des_sqlite:
         else:
             return ''
 
+    def add_url(self,ph):
+        '''
+        将url 加载进 数据库中
+        '''
+        f=open(ph)
+        lines = f.readlines()
+        f.close()
+        
+        for i,l in enumerate(lines):
+            url = l.split()[1] 
+            #print url
+            self.cu.execute("update lib set url= '%s' where docID = %d"%(url,i))
+        self.cx.commit()
+
 
     def update_des(self,docID,des):
         print 'add des',des
@@ -128,7 +142,8 @@ class Title_des_sqlite:
         '''
         添加 分词后的des
         '''
-        self.cu.execute("update lib set split_des = '%s'"%des)
+        self.cu.execute("update lib set split_des = '%s' where docID =\
+        %d"%(des,docID)  )
 
 
 
@@ -144,6 +159,7 @@ class Title_des_sqlite:
         #
         #################################
 
+        '''
         for i in range( pagenum ):
             
             print 'file:', 'store/document/'+str(i)
@@ -221,6 +237,7 @@ class Title_des_sqlite:
                     self.add_des( docid,des)
 
         self.cx.commit()
+        '''
 
 
     def split_des(self):
@@ -238,6 +255,8 @@ if __name__ == '__main__':
     
     doc = Title_des_sqlite()
     doc.run()
+    #doc.add_url('store/sorted_url.txt')
+    doc.split_des()
 
 
     

@@ -13,7 +13,7 @@ from parser.collector import collector
 from ICTCLAS50.Ictclas import Ictclas
 import os
 import parser.Thes as Thes
-import sqlite3 as sq 
+       
 
 
 class Parser:
@@ -37,11 +37,9 @@ class Parser:
 
         #初始化词库 
         self.wordbar = Thes.Create_Thesaurus(self.wbpath)
-
         #数据库相关
         self.cx = sq.connect('store/chun.sqlite')
         self.cu = self.cx.cursor()
-
 
     def splitWord(self):
         '''
@@ -158,12 +156,12 @@ class Parser:
         '''
         添加 des 的 hash
         '''
-        self.cu.execute("select des from lib where docID = %d"%int(docID))
+        self.cu.execute("select split_des from lib where docID = %d"%int(docID))
 
         li= self.cu.fetchone()
-
-        if li[0]:
-            return self.ict.split( str(li[0]) ).split()
+        if li:
+            print 'get des',li
+            return li[0].split()
         else:
             return ['']
         

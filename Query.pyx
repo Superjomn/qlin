@@ -40,20 +40,19 @@ cdef class Res_Query:
         self.res = {}
         
         cdef object query_res=self.find(strr,page_id)
-        print 'get res',query_res
+        #print 'get res',query_res
 
         if not query_res:
             return False
 
-        
         cdef int length = query_res['length']
 
         self.res.setdefault('length',length)
         
         res_li = [] 
         for docid in query_res['docIDs']:
-            print 'now get ',docid
-            self.cu.execute("select title,des,intro from lib where docID =%d"%docid)
+            #print 'now get ',docid
+            self.cu.execute("select title,des,intro,url from lib where docID =%d"%docid)
             res_li.append(self.cu.fetchone())
 
         self.res.setdefault('res_list',res_li)

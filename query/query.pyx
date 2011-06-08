@@ -95,12 +95,13 @@ DEF Whit_add  =    30
 #       在扫描过程中同时计算rank
 #       计算 权值
 ####################################
-DEF SCORE_EACH = 1
 DEF SCORE_TITLE = 0
 DEF SCORE_B = 1
 DEF SCORE_H1 = 2
 DEF SCORE_A = 5
 DEF SCORE_CONTENT = 6
+
+DEF SCORE_DES = -1
 
 
 
@@ -137,6 +138,8 @@ cdef inline float sc(int score):
         return 1
     elif score == SCORE_CONTENT:
         return 2
+    elif score == SCORE_DES:
+        return 5
     return 0
 
 
@@ -146,6 +149,7 @@ cdef inline float sc(int score):
 #     最终权值排序 
 #
 ##############################
+
 cdef class RankSorter:
 
     '''
@@ -159,8 +163,8 @@ cdef class RankSorter:
         '''
         init
         '''
-        print 'sort init'
-        print 'length',length
+        #))print 'sort init'
+        #))print 'length',length
         self.dali = li
         self.length=length
 
@@ -170,7 +174,7 @@ cdef class RankSorter:
         '''
 		返回需要进行比较的值
         '''
-        print 'sorting',data.rank
+        #))print 'sorting',data.rank
         return data.rank
         
 
@@ -202,29 +206,30 @@ cdef class RankSorter:
             q=st.pop()
             p=st.pop()
 
-            print 'quicksort q p',q,p
+            #))print 'quicksort q p',q,p
 
 
     cdef int partition(self,int low,int high):
 
         v=self.dali[low]
 
-        print 'partition low,high',low,high
+        #))#))print 'partition low,high',low,high
 
         while low<high:
 
-            while low<high and self.gvalue( self.dali[high] ) >= self.gvalue( v ):
+            while low<high and self.gvalue( self.dali[high] ) <= self.gvalue( v ):
 
                 high-=1
 
             self.dali[low]=self.dali[high]
 
-            while low<high and self.gvalue( self.dali[low] )<=self.gvalue( v ):
+            while low<high and self.gvalue( self.dali[low] )>=self.gvalue( v ):
                 low+=1
 
             self.dali[high]=self.dali[low]
 
         self.dali[low]=v
+        return low
 
     
 
@@ -233,7 +238,7 @@ cdef class RankSorter:
         '''
         运行主程序
         '''
-        print 'quicksort 0',self.length-1
+        #))print 'quicksort 0',self.length-1
         self.quicksort(0,self.length-1)
 
 
@@ -271,12 +276,12 @@ cdef class Query:
         '''
         ##########################################
         #wlist 初始化
-        print 'wlist 初始化'
+        #))print 'wlist 初始化'
 
         self.wlist.whit = <Whit *>malloc(Whit_init_num * sizeof(Whit) )
         self.plist.whit = <Whit *>malloc(20 * sizeof(Whit))
         
-        print 'init self.wlist malloc'
+        #))print 'init self.wlist malloc'
         self.wlist.top = -1
         self.wlist.length = Whit_init_num
         self.wlist.empty = 0
@@ -310,7 +315,7 @@ cdef class Query:
                 maxl=self.hlist.width[i]
 
         #开始为hit分配内存
-        print '开始为hit_list分配内存'
+        #))print '开始为hit_list分配内存'
         #**print '分配了最大的内存 hitlist',maxl
         self.hlist.hit = <Hit *>malloc( sizeof(Hit) * maxl)
 
@@ -359,7 +364,7 @@ cdef class Query:
             print '329 succed free hlist'
             '''
 
-        print '335: begin malloc hlist'
+        #))print '335: begin malloc hlist'
         #**print '340: hit length',self.hlist.width[index]
 
         #self.hlist.hit = <Hit *> malloc(sizeof(Hit) * self.hlist.width[index] )
@@ -397,6 +402,8 @@ cdef class Query:
         mid = 0
         end = self.hlist.length-1
 
+        #))print 'in pos_wid end',end
+
         while fir<end:
             mid = (fir+end)/2
             if self.wlist.wid > self.hlist.hit[mid].wordID:
@@ -433,12 +440,12 @@ cdef class Query:
             int i
             int j
 
-        print 'get into pos'
+        #))print 'get into pos'
 
         i=self.pos_mid_wid()
 
 
-        print 'get mid wid',i
+        #))print 'get mid wid',i
         
         j=i
 
@@ -450,7 +457,7 @@ cdef class Query:
 
         self.wlist.left= j+1
 
-        print 'get left',self.wlist.left
+        #))print 'get left',self.wlist.left
         
         
         while i<=self.hlist.length-1:
@@ -460,7 +467,7 @@ cdef class Query:
                 break
 
         self.wlist.right= i-1
-        print 'get right',self.wlist.right
+        #))print 'get right',self.wlist.right
 
 
     cdef void init_whit_list(self):
@@ -470,8 +477,8 @@ cdef class Query:
         首次初始化whit空间
         以后的词均在此空间内进行过滤便可
         '''
-        #print '+hit_list - init_whit_list'
-        print '初始化whit'
+        #))print '+hit_list - init_whit_list'
+        #))print '初始化whit'
 
         cdef:
             #当前搜索的did
@@ -499,7 +506,7 @@ cdef class Query:
                 pass
 
             else:
-                print '- whit_list append',cur_did
+                #))print '- whit_list append',cur_did
                 self.append(self.hlist.hit[i])
                 cur_did = self.hlist.hit[i].docID
 
@@ -517,8 +524,8 @@ cdef class Query:
         默认　已经存在一个word记录
         '''
         
-        print '这次 find 的 scan_id',self.wlist.scan_id
-        print 'find> begin find the word',word
+        #))print '这次 find 的 scan_id',self.wlist.scan_id
+        #))print 'find> begin find the word',word
 
 
         cdef:
@@ -531,13 +538,13 @@ cdef class Query:
 
         #确定wid对应字段范围
         #此处需要确定　wid
-        print 'get wid',self.wlist.wid
+        #))print 'get wid',self.wlist.wid
         #**print 'hello 491'
         
         self.pos_wid_scope()
         #**print 'hello'
 
-        print 'get word scope',self.wlist.left,self.wlist.right
+        #))print 'get word scope',self.wlist.left,self.wlist.right
 
 
         #自动初始化
@@ -562,11 +569,11 @@ cdef class Query:
         #为了对第一个hit_list进行处理
         #估计改变cur_did
         cur_did=self.hlist.hit[i].docID - 1
-        print 'cur_did is',cur_did+1
+        #))print 'cur_did is',cur_did+1
          
         while i <= self.wlist.right:
             #在wid内进行遍历
-            print 'search hit',i,self.hlist.hit[i].wordID, self.hlist.hit[i].docID
+            #))print 'search hit',i,self.hlist.hit[i].wordID, self.hlist.hit[i].docID
             if self.hlist.hit[i].docID == cur_did:
                 pass
             else:
@@ -574,8 +581,8 @@ cdef class Query:
                 res = self.add(self.hlist.hit[i],i)
                 cur_did = self.hlist.hit[i].docID
                 
-                print 'add',cur_did
-                print '结果为',res
+                #))print 'add',cur_did
+                #))print '结果为',res
 
                 if res == -3 or res == -2 or res == 2:
                     # -3:切头内大   -2:晴空 外大   2:常规溢出
@@ -614,7 +621,7 @@ cdef class Query:
         在初始化wlist时候使用
         将 hit_list 自动加入到 whit_list中
         '''
-        print 'append',hit.wordID,hit.docID
+        #))print 'append',hit.wordID,hit.docID
         cdef Whit *base
         cdef:
             int i
@@ -630,7 +637,7 @@ cdef class Query:
         
         if self.wlist.top > self.wlist.length - 2:
             #重新分配
-            #**print '开始添加分配 wlist 内存 relloc'
+            #))print '开始添加分配 wlist 内存 relloc'
 
             base = <Whit *> realloc( self.wlist.whit , sizeof(Whit) * (self.wlist.length + Whit_add) )
 
@@ -642,7 +649,7 @@ cdef class Query:
             
             #**print '分配realloc成功'
 
-        #print 'firstly get length %d in append'%self.wlist.top
+        #))print 'firstly get length %d in append'%self.wlist.top
 
 
     cdef short add(self,Hit hit,int i):
@@ -660,16 +667,16 @@ cdef class Query:
         #外界逐次扫描
         #同时内部也逐步扫描
         
-        #**print 'add',hit.docID
+        #))print 'add',hit.docID
     
         cdef:
             int j
             int cur_did
 
-        print 'add 里面 的 scan_id',self.wlist.scan_id
+        #))print 'add 里面 的 scan_id',self.wlist.scan_id
 
-        print '> hit and index',i,hit.docID,hit.wordID
-        print '> now scan_id_docID',self.wlist.whit[self.wlist.scan_id].docID
+        #))print '> hit and index',i,hit.docID,hit.wordID
+        #))print '> now scan_id_docID',self.wlist.whit[self.wlist.scan_id].docID
 
         #去除无用记录 
         while self.wlist.whit[self.wlist.scan_id].rank ==-1 and self.wlist.scan_id <= self.wlist.top:
@@ -678,7 +685,7 @@ cdef class Query:
 
         cur_did = self.wlist.whit[self.wlist.scan_id].docID
 
-        print 'now wlist cur  docID is',cur_did
+        #))print 'now wlist cur  docID is',cur_did
 
         #一直到最后都是 -1
         if self.wlist.scan_id > self.wlist.top:
@@ -720,7 +727,7 @@ cdef class Query:
         
 
         if hit.docID == self.wlist.whit[ self.wlist.scan_id ].docID :
-            #**print 'hit cur_did equals',self.wlist.whit[ self.wlist.scan_id ].docID
+            #))print 'hit cur_did equals',self.wlist.whit[ self.wlist.scan_id ].docID
             self.wlist.whit[self.wlist.scan_id].rank += sc(hit.score)# * SCORE_ADD
             self.wlist.scan_id += 1
             return 0
@@ -751,7 +758,7 @@ cdef class Query:
             double hashvalue
         
         words = self.ict.split(para).split()
-        print 'get words',words
+        #))print 'get words',words
 
         '''if self.wlist.whit != NULL:
             print '将wlist清空'
@@ -762,11 +769,11 @@ cdef class Query:
         for word in words:
             #对每个词进行处理
             wid = self.thes.find(word)
-            print 'find',word,wid
+            #))print 'find',word,wid
 
             if wid == 0:
                 return False
-            print 'get wid',wid
+            #))print 'get wid',wid
 
             #开始根据wid进行查询
             self.wlist.wid = wid
@@ -774,13 +781,13 @@ cdef class Query:
             #更新 hit_list 内存
             hashvalue = hash(word)
 
-            #**print '675: begin to init_hit_file'
+            #))print '675: begin to init_hit_file'
 
             self.init_hit_file(hashvalue)
 
             #开始进行查找操作
-            print 'find_words>begin to find',word
-            print '此时 wlist.top:',self.wlist.top
+            #))print 'find_words>begin to find',word
+            #))print '此时 wlist.top:',self.wlist.top
             self.find(word)
 
     
@@ -831,9 +838,9 @@ cdef class Query:
         '''
         将最终结果进行排序
         '''
-        print 'get into sort'
+        #))print 'get into sort'
         self.ranksort.init(self.plist.whit,self.plist.length)
-        print 'init ok'
+        #))print 'init ok'
         self.ranksort.run()
 
 
@@ -843,7 +850,7 @@ cdef class Query:
         晴空所有运行时内存
         准备下一次思索
         '''
-        print '开始清理内存'
+        #))print '开始清理内存'
 
         #########################################
         #wlist 清理
@@ -883,7 +890,7 @@ cdef class Query:
         
         默认 page 从1 开始
         '''        
-        print 'begin to get res'
+        #))print 'begin to get res'
 
         cdef:
             int page_start
@@ -899,9 +906,9 @@ cdef class Query:
             return False
 
         ##plist 进行排序
-        print '开始进行排序'
-        #self.sort()
-        print '排序完毕'
+        #))print '开始进行排序'
+        self.sort()
+        #))print '排序完毕'
 
         ##########################################
         # 开始结果包装
@@ -911,7 +918,7 @@ cdef class Query:
 
         length = self.plist.length
         
-        print '>> res get length',length
+        #))print '>> res get length',length
 
         if (page_id-1) * Page_each > length:
             return -1
@@ -936,8 +943,8 @@ cdef class Query:
         #**print '进行内存消除'
         self.initData()
         #print '此次思索结束 wlist.top',self.wlist.top
-        print '-'*50
-        print 'from query get res',res
+        #))print '-'*50
+        #))print 'from query get res',res
 
         return res
 

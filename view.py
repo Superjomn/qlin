@@ -42,9 +42,15 @@ def search(request):
         text = request.GET['query_text'] 
 
         result = query.gres( text,1 )
-        result.setdefault('query_text',text)
+        if result:
+            result.setdefault('query_text',text)
+        else:
+            result = {}
+            result.setdefault('query_text',text)
+            result.setdefault('length',0)
+            result.setdefault('res_list',[])
 
-        print result
+        #print result
         html = t.render( Context( result ) )
 
         return HttpResponse(html)
