@@ -16,6 +16,14 @@
 		height:0;
 		width:100%;
 		}
+	#sea-form input{
+		font-size:18px;
+		padding:0.1em;
+	}
+	#sea-form button{
+		font-size:17px;
+		padding:0.1em;
+		}
 	
 	#logo{
 		font-size:40px;
@@ -31,7 +39,6 @@
 		border:1px solid #ccc;
 		width:800px;
 		margin:15px auto;
-        padding:5px;
 	}
 	
 	div.res{
@@ -62,9 +69,6 @@
     .hi{
         color:red;
     }
-    div#page_nav li{
-        font-size:17px;
-    }
 </style>
 
 
@@ -82,12 +86,12 @@
 			$("#demo1").paginate({
 				count 		: {{page_num}},
 				start 		: {{page}},
-				display     : 10,
+				display     : 5,
 				border					: true,
-				border_color			: '#fff',
+				border_color			: '#ccc',
 				text_color  			: '#000',
 				background_color    	: 'white',	
-				border_hover_color		: '#fff',
+				border_hover_color		: '#000',
 				text_hover_color  		: '#fff',
 				background_hover_color	: '#ccc', 
 				images					: false,
@@ -119,39 +123,10 @@
             </a>
         </div>
 
-<style>
-    form#sea-form{
-        width:300px;
-        padding:5px;
-        font-size:17px;
-        border:1px solid #ccc;
-    }
-    form#sea-form input{
-        font-size:20px;
-        float:left;
-        border:none;
-        width:270px;
-    }
-
-    button{
-        font-size:17px;
-    }
-        
-    form#sea-form button{
-        width: 25px;
-        height:25px;
-        float:left;
-        background:url(/templates/image/tt.png);
-        background-position:center;
-        border:none;
-    }
-
-</style>	
-
+	
 	<form id="sea-form" action="/search/" method="get">
 		<input type="text" name="query_text" />
-		<button type="submit"></button>
-        <div class='clear'></div>
+		<button type="submit">搜索</button>
 	</form>
 	<div class="clear"></div>
     {%if res_list%}	

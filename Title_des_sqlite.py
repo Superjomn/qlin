@@ -194,7 +194,7 @@ class Title_des_sqlite:
                 self.add_content(i,content)
 
             else:
-                self.add_content(i,content[:100])
+                self.add_content(i,content)
 
         #数据库变动提交
         self.cx.commit()

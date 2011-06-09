@@ -2,6 +2,17 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<link type="text/css" rel="stylesheet" href="/templates/jquery/development-bundle/themes/ui-lightness/jquery.ui.all.css" />
+
+<script type="text/javascript" src="/templates/jquery/development-bundle/jquery-1.5.1.js"></script>
+
+<script type="text/javascript" src="/templates/jquery/development-bundle/ui/jquery.ui.core.js">
+</script>
+<script type="text/javascript" src="/templates/jquery/development-bundle/ui/jquery.ui.widget.js"></script>
+<script type="text/javascript" src="/templates/jquery/development-bundle/ui/jquery.ui.button.js"></script>
+
+
 <title>中文内网全文搜索引擎</title>
 <style>
 	*{
@@ -10,9 +21,19 @@
 		}
 	body{
 		text-align:center;
+		background-color:#ccc;
+		font-family:"微软雅黑", "黑体";
 		}
     div#content{
-        background:
+        height:470px;
+        width:900px;
+        background:url(/templates/image/background.jpg);
+        background-repeat:no-repeat;
+        background-position:center top;
+        border:1px solid #fff;
+        margin-top:50px;
+        margin-left:auto;
+        margin-right:auto;
     }
 	.clear{
 		clear:both;
@@ -20,39 +41,109 @@
 		width:100%;
 		}
 	#logo{
-		margin-top:130px;
 		font-size:50px;
 		font-family:"微软雅黑", "黑体";
-		color:blue;
-		}
-	form#search input{
+		color:#fff;
 		margin-top:30px;
-		width:28em;
-		padding:2px;
+		}
+    /*
+	form#search input{
+		width:25em;
+		padding:0.3em;
 		font-size:18px;
-		border:2px solid #ccc;
+		border:1px solid #ccc;
+		font-family:"微软雅黑", "黑体";
 		}
 	form#search button{
 		margin-top:10px;
-		font-family:"微软雅黑", "黑体";
-		font-size:16px;
-		padding:2px;
+
 		}
+
+    */
+    div#header{
+    margin-top:10px;
+    width:400px;
+    margin-left:auto;
+    margin-right:auto;
+    color:#fff;
+    }
+
+    div#header a{
+    text-decoration:none;
+    color:#fff;
+    }
+    div#heder a:hover{
+    color:yellow;
+    text-decoration:underline;
+    }
+
+	div#header li{
+		display:block;
+		float:left;
+		padding:0.4em 0.1em;
+		}
+
+
+    form#search{
+        width:400px;
+        padding:5px;
+        font-size:17px;
+        border:1px solid #ccc;
+        margin-left: auto;
+        margin-right:auto;
+        text-align:left;
+        background-color:#fff;
+    }
+    form#search input{
+        font-size:20px;
+        float:left;
+        border:none;
+        width:370px;
+    }
+        
+    form#search button{
+        width: 25px;
+        height:25px;
+        float:left;
+        background:url(/templates/image/tt.png);
+        background-position:center;
+        border:none;
+    }
+
+
 	
 </style>
 </head>
 
 <body>
-	<div id="logo"> 内网搜索 </div>
+	
 	<div id="content">
+		<div id="logo"> 内网搜索 </div>
+		<div id="header">
+			<ul>
+				<li><a href="#">新闻网</a></li>
+				<li>|</li>
+				<li><a href="#">教务处</a></li>
+				<li>|</li>
+				<li><a href="#">五色土</a></li>
+				<li>|</li>
+				<li><a href="#">公告栏</a></li>
+				<li>|</li>
+				<li><a href="#">更多...</a></li>
+				<div class="clear"></div>
+			</ul>
+		</div>
 		<form id="search" action="/search/" method="get">
 			<input type="text" name="query_text" />
-			<div class="clear"></div>
-			<button type="submit" id="search_bn">全域查找</button>
-			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-			<button type="button" id="ver_bn">垂直搜索</button>
+			<button type="submit" id="search_bn"></button>
+            <div class='clear'></div>
 		</form>
 	</div><!--end content-->
 
 </body>
+<script type="text/javascript">
+	$(function(){
+		$('button').button();
+	});
+</script>
 </html>
