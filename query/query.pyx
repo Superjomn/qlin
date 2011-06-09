@@ -629,7 +629,12 @@ cdef class Query:
         
         self.wlist.top += 1
         self.wlist.whit[self.wlist.top].docID = hit.docID
-        self.wlist.whit[self.wlist.top].pos = hit.pos
+
+        self.wlist.whit[self.wlist.top].pos = -1
+
+        if hit.score != SCORE_TITLE and hit.score != SCORE_DES:
+            #记录未在title和des中命中的一个pos
+                self.wlist.whit[self.wlist.top].pos = hit.pos
 
         #计算权质
         #初始化时  直接赋值
@@ -729,6 +734,11 @@ cdef class Query:
 
         if hit.docID == self.wlist.whit[ self.wlist.scan_id ].docID :
             #))print 'hit cur_did equals',self.wlist.whit[ self.wlist.scan_id ].docID
+            #记录pos
+            if hit.score != SCORE_TITLE and hit.score != SCORE_DES:
+                #记录未在title和des中命中的一个pos
+                self.wlist.whit[self.wlist.top].pos = hit.pos
+
             self.wlist.whit[self.wlist.scan_id].rank += sc(hit.score)# * SCORE_ADD
             self.wlist.scan_id += 1
             return 0

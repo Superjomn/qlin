@@ -41,7 +41,7 @@ init
 
     def gres(self,char *strr,int page_id):
 
-        print 'search for',strr
+        #print 'search for',strr
         self.res = {}
         
         cdef object query_res=self.find(strr,page_id)
@@ -74,7 +74,7 @@ init
 
     cdef add_hi(self,text):
         for w in self.query.get_words():
-            print 'now replace',text
+            #print 'now replace',text
             text=text.replace(w,'<span class="hi">'+w+'</span>')
         return text
 
