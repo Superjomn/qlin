@@ -292,9 +292,12 @@ cdef class Indexer:
 
             print 'doc is',doc
 
-            f=open(self.fph+'/'+doc)
-            c=f.read()
-            f.close()
+            try:
+                f=open(self.fph+'/'+doc)
+                c=f.read()
+                f.close()
+            except:
+                continue
 
             tags=c.split('@chunwei@')
 
