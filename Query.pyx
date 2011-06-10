@@ -57,9 +57,20 @@ init
         res_li = []
         for docid in query_res['docIDs']:
             #print 'now get ',docid
+            #取得 des
+            deses = []
+
             self.cu.execute("select title,des,intro,url from lib where docID =%d"%docid)
+            #开始取得wordid
+
+
+
+
+
             res=[]
             hits = self.cu.fetchone()
+
+             
 
             res.append(self.add_hi(hits[0]) )
             res.append(self.add_hi(hits[1]) )
