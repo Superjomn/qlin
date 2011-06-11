@@ -4,10 +4,11 @@ from parser.Init_Thes import Init_thesaurus
 
 thes=Init_thesaurus('store/wordBar')
 
-thes.show()
+#thes.show()
 print '-'*50
 print 'end show() successfully!'
 
+print thes.find('理学院')
 '''
 
 print 'in try to find >>>>>>>>>'

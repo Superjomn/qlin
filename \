@@ -4,7 +4,7 @@ from django.template.loader import get_template
 from django.template import Context
 from django.http import HttpResponse
 
-import time
+from timeit import Timer
 
 import Query
 
@@ -29,6 +29,8 @@ def index(request):
     html = t.render(Context({}))
     return HttpResponse(html)
 
+def geres(text,page):
+    return query.ges(text,page)
 
 
 def search(request):
@@ -36,6 +38,7 @@ def search(request):
     '''
     搜索主程序
     '''
+
     t = get_template('search.html')
 
     if 'query_text' in request.GET:
@@ -51,14 +54,13 @@ def search(request):
             page = 1
 
         ###print 'final page',page
-        time1 =time.time()
 
         text = request.GET['query_text'] 
         
         #计算查询时间
-        result = query.gres( text, page)
+        t = Timer("result = query.gres( text, page)","from __main__ import query")
+        time = t.timeit(1)
         
-        time2 = time.time()
 
         Per_page = 8 
 
@@ -78,7 +80,7 @@ def search(request):
                 for w in words[:-1]:
                     strr+=w+'+'
                 strr+=words[-1]
-                ###print 'the query word is',strr
+                print 'the query word is',strr
             else:
                 strr=text
 
@@ -86,7 +88,7 @@ def search(request):
             result.setdefault('page_num',page_num)
             result.setdefault('page',page)
             #赋值时间
-            #result.setdefault('time',time)
+            result.setdefault('time',time)
 
 
         else:
@@ -94,10 +96,7 @@ def search(request):
             result.setdefault('query_text',text)
             result.setdefault('length',0)
             result.setdefault('res_list',[])
-
-
-        result.setdefault('time',round(time2-time1,4))
-
+                   #print result
         html = t.render( Context( result ) )
 
         return HttpResponse(html)

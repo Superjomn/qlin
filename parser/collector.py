@@ -137,8 +137,8 @@ class collector():
             #取得url 对其进行判断  
             #如果判断合格 则建立 url 到document中  否则 不建立文件
             url=aa[i]
-            print 'get url ',url
-            print 'begain to transfer'
+            ###print 'get url ',url
+            ###print 'begain to transfer'
             url=self.urltest.abs_url_trans(tem_home, url)
 
             if url:
@@ -151,10 +151,10 @@ class collector():
         html.appendChild(a)
         #加入content
 
-        print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
-        print self.d.html()
+        ###print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+        ###print self.d.html()
         
-        print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+        ###print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
 
         htmltext=self.d.html()#.decode('gbk','ignore').encode('utf-8')
         

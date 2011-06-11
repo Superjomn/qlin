@@ -134,8 +134,9 @@ class Parser:
                 self.__wordFind(i)
 
             print 'begin to find des'
-            for i in self.get_split_des_words(xml):
+            '''for i in self.get_split_des_words(xml):
                 self.__wordFind(i)
+            '''
                 
         strr=''
         #for i in self.wordbar.li:

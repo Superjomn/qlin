@@ -159,15 +159,13 @@ class Title_des_sqlite:
         #
         #################################
 
-        '''
         for i in range( pagenum ):
             
             print 'file:', 'store/document/'+str(i)
-            f= open('store/document/'+str(i))
-            c=f.read()
-            f.close()
-            
             try:
+                f= open('store/document/'+str(i))
+                c=f.read()
+                f.close()
                 root = pq(c)
             except:
                 continue
@@ -210,12 +208,12 @@ class Title_des_sqlite:
         #添加des
         for i in range( pagenum ):
 
-            f= open('store/document/'+str(i))
-            c=f.read()
-            f.close()
-
             try:
+                f= open('store/document/'+str(i))
+                c=f.read()
+                f.close()
                 root = pq(c)
+
             except:
                 continue
 
@@ -237,7 +235,6 @@ class Title_des_sqlite:
                     self.add_des( docid,des)
 
         self.cx.commit()
-        '''
 
 
     def split_des(self):
@@ -255,8 +252,8 @@ if __name__ == '__main__':
     
     doc = Title_des_sqlite()
     doc.run()
-    #doc.add_url('store/sorted_url.txt')
-    doc.split_des()
+    doc.add_url('store/sorted_url.txt')
+    #doc.split_des()
 
 
     

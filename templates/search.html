@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>{{query_text}}</title>
+<title>{{query_text}} - qlin 内网搜索</title>
 <style>
 	*{
 		padding:0;
@@ -35,12 +35,13 @@
 	}
 	
 	div.res{
-		margin:15px auto;
+		margin:20px auto;
 	
 	}
 	
 	div.res h2{
 		font-size:18px;
+        font-weight:normal;
 		line-height:1.1em;
 	}
 	div.res .des{
@@ -95,7 +96,7 @@
                 onChange                : function(page){
 
         //开始转向
-        location.replace("http://127.0.0.1:8000/search/?query_text={{url_text}}&page="+page);
+        location.replace("/search/?query_text={{url_text}}&page="+page);
 
         }
 
@@ -146,13 +147,28 @@
         border:none;
     }
 
-</style>	
+    div#inform{
+        padding:0.2em;
+        width:100%;
 
+    }
+
+    div#time{
+        float:left;
+        margin-left: 10px;
+    }
+
+</style>	
 	<form id="sea-form" action="/search/" method="get">
-		<input type="text" name="query_text" />
+		<input type="text" name="query_text" value="{{query_text}}" />
 		<button type="submit"></button>
         <div class='clear'></div>
 	</form>
+
+<div id = 'inform'>
+    <div id = 'time'>找到&nbsp;{{length}}&nbsp;条信息&nbsp;&nbsp;(&nbsp;用时：{{time}}s&nbsp;)</div>
+</div>
+
 	<div class="clear"></div>
     {%if res_list%}	
         {%for res in res_list%}
@@ -167,11 +183,12 @@
                         {%endif%} 
                     </a></h2>
                 <div class="des">{{res.0}}</div>
-                {%endautoescape%}
 
                 <div class="intro">{{res.2}}</div><!-- intro -->
 
-                <span class="url">{{res.3}}</span>
+                <span class="url">{{res.4}}</span>
+
+                {%endautoescape%}
             </div><!-- res -->
 
         {%endfor%}

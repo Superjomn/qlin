@@ -8,9 +8,3 @@ from parser.UrlTransID import UrlTransDir
 urlTransDir = UrlTransDir('store/sorted_url.txt')
 
 urlTransDir.renameDoc('store/document')
-
-
-
-
-
-

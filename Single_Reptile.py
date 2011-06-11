@@ -21,18 +21,6 @@ from parser.collector import collector
 
 class reptile(threading.Thread):  
 
-#全局值 
-    # queue     : the runtime url bar ( the repile pop a new url from it each time)
-    # name      : repile 进程的名称
-    # Flcok     : 对文件操作的琐
-    # num       : repile进程下载页面个数
-    # list      : Urlist对象 运行时url参考 以判断页面是否下载过
-    # homelist  : 父目录参考(模拟垂直下载)
-    # maxnum    : 设定repile进程下载页面数上限
-#局部：
-    #raw_url    : 存储每次下载页面中的未经过处理的url 
-    #inque      : queue的继承 运行时绝对url参考  
-    
     def __init__(self, Name, runtime_queue, list, per_max_num ,Flcok):  
 
         threading.Thread.__init__(self, name = Name )  
@@ -56,7 +44,7 @@ class reptile(threading.Thread):
         得到父地址 作为接口可以被重载
         '''
         #self.home_urls=self.sqlite.execute('select * from home_urls')
-        self.home_url="http://news.cau.edu.cn"
+        self.home_url="http://www.cau.edu.cn"
     
     def add_runtime_urls(self,docname,url):
         self.Flcok.acquire()  
@@ -73,17 +61,22 @@ class reptile(threading.Thread):
         opener = urllib2.build_opener()     
 
         while True:  
+
             print 'queue size:',self.runtime_queue.qsize()
+
             if self.runtime_queue.qsize()==0:
+
                 print 'the queue is empty break the while'
                 break
+
             #单次运行时url
             url = self.runtime_queue.get()          
+            print 'get a url from runtime',url
             
             if url == None:                 
                 break
             
-            print 'get from runtime',url
+            print 'get the url from runtime',url
             
             request = urllib2.Request(url) 
             request.add_header('Accept-encoding', 'gzip')
@@ -142,20 +135,22 @@ class reptile(threading.Thread):
             
             if self.num>self.maxnum:
 
-                '''for i in self.list:
-                    ###print i
-                break'''
+                for i in self.list:
+                    print i
+                break
 
                 return True
         
+
     def trans_d(self,tem_home,rawurls):
+
         '''
         对地址的处理：
             包括 判断url是否为父地址的子页面
             将 相对url 转化为 相对url
         '''
-        #print 'get tem_home',tem_home
-        #print 'get rawurls',rawurls
+        print 'get tem_home',tem_home
+        print 'get rawurls',rawurls
 
         while True:
             if len(rawurls)>0:
@@ -163,16 +158,16 @@ class reptile(threading.Thread):
                 
             else:
                 return False
-
-            print 'tem_home>',tem_home 
+            
             newurl=self.urltest.abs_url_trans(tem_home, url)
-            print 'get new>',newurl
 
             if newurl and self.list.find(newurl) == False:
-                print 'input>',newurl
+                print 'input a url into runtime_queue',newurl
                 self.runtime_queue.put(newurl) 
          
+
     def save_doc_content(self,docname,tem_home):
+
         '''
         将各个节点的内容存入数据库中
         '''
@@ -192,7 +187,6 @@ class reptile(threading.Thread):
             f.write(self.collector.xml(tem_home).toxml())
         except:
             print 'write the data wrong'
-            pass
     
         print 'begain to save content in file'
         #text=docname+'@chunwei@'+title+'@chunwei@'+a[0]+'@chunwei@'+a[1]+'@chunwei@'+h1+'@chunwei@'+h2+'@chunwei@'+h3+'@chunwei@'+b+'@chunwei@'+content
@@ -238,7 +232,7 @@ class Reptile_run:
         '''
         运行主程序
         '''
-        startpage= 'http://news.cau.edu.cn/'
+        startpage='http://www.cau.edu.cn'
         
         for i in range(self.thread_num):  
 

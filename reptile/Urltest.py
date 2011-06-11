@@ -27,7 +27,7 @@ class Urltest:
         初始化 父地址列表
         '''
         #self.home_urls=self.cs.execute('select * from home_urls').fetchall()
-        self.home_urls=['http://www.cau.edu.cn']
+        self.home_urls=['http://news.cau.edu.cn']
         
     def absUrl(self,homeurl,url):
         '''
@@ -57,6 +57,7 @@ class Urltest:
                 break
         if level2>=len(level):
             #url不合法 出现 cau.edu.cn/   ../index.php
+            #print 'level2>=len(level) False'
             return False
         baseurl=homeurl[0:level[level2]]
         #print baseurl
@@ -65,34 +66,50 @@ class Urltest:
         newurl=baseurl+apdurl
         if self.type_test(newurl):
             return newurl.replace('./','')
+
         else:
+            #print 'self.type_test False'
             return False
+
 
     def type_test(self,url):
         '''
         对 绝对url 的合法性判断
         如 文件类型不能为 doc exe 等
         '''
+        #print 'type_test>',url
+        ri_end = self.__backFind(url,'?')
+        if ri_end:
+            url = url[:ri_end]
+        #print 'type_test_trans',url
+
         rightlist=('cn','com','php','asp','jsp','html','htm')
         
         length=len(url)
         if url.find('///')>-1:
             return False
+
         if url.find('mailto:')>-1:
             return False
 
         for i in range(len(url)):
+
             index=length-i-1
+
             if url[index]=='.':
                 break
+
             if url[index]=='/':
                 return True 
+
         end=url[index+1:]
         #print end
         for li in rightlist:
             if li==end:
                 return True
+
         return False
+
 
     def abs_url_trans(self,tem_home,url):
         '''
@@ -100,7 +117,7 @@ class Urltest:
         将 url 通过局部父地址转化为绝对地址
         如果其不满足特定条件，返回 False 否则 返回绝对地址
         '''
-        print 'the home url',self.home_urls
+        #print 'the home url',self.home_urls
         #基础格式整形
         if (url== None)or(len(url)<3):   
             return False
@@ -111,7 +128,7 @@ class Urltest:
         #绝对地址判断 
         
         if len(url) >= len('http://') and url[0:7] == 'http://':
-            print 'it is a absolute url'
+            #print 'it is a absolute url'
             for homeurl in self.home_urls:
                 home_length=len(homeurl)
                 if len(url) >= home_length and url[0:home_length] == homeurl:
@@ -145,20 +162,21 @@ class Urltest:
         if pos1 and pos2:
             if pos1>pos2:
                 #cn/hsz cn/hsz/
-                print 'length is',length
-                print 'pos1 is ',pos1
+                #print 'length is',length
+                #print 'pos1 is ',pos1
                 if pos1==length-1:
                     return url[:-1]
-            return url
+            #return url
         #cau.edu.cn   hsz.php
         end=url[pos2+1:]
-        print 'ping: cau.edu.cn\n the end is:',end
+        #print 'ping: cau.edu.cn\n the end is:',end
         for i in right_end:
             if end==i: #like: cau.edu.cn
                 return url
         #like cau.edu.cn/index.php
         pos2=self.__backFind(url[:pos2],'/')
         return url[:pos2]
+    
        
 
 
@@ -173,12 +191,25 @@ class Urltest:
     
 
 if __name__=='__main__':
+    
     urltest=Urltest()
+    li=['http://www.cau.edu.cn/index.php?id=234232','http://www.cau.edu.cn/hsz/?id=2323232',\
+        'http://www.cau.edu.cn/hsz/index.php?id=23&text=2323']
+    for i in li:
+        print i
+        print urltest.tem_home(i)
+
     urls=['../chunwei/qiaolin','./bbs/././chunwei.php','index.doc','http://www.cau.edu.cn','http://www.cau.edu.cn/tyjxb']
-    homeurl='http://www.cau.edu.cn'
+    homeurl='http://www.cau.edu.cn/index.php?home=112121'
+    '''
     for url in urls:
-        print url,homeurl,urltest.abs_url_trans(homeurl, url)
+        print url
+        print 'tem home',urltest.tem_home(homeurl)
+        print urltest.abs_url_trans( urltest.tem_home(homeurl), url)
+        print ''
         print '----------------------------------------'
+    '''
+    print urltest.type_test('http://www.cau.edu.cn/index.php')
             
         
     

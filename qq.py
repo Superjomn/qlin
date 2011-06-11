@@ -8,8 +8,8 @@ from timeit import Timer
 
 
 
-li=['中国','教务处','体育部数学','中国农业银行','红十字会','北京大学生','北京实验室','试探纪实','实验室','教务处']
-
+#li=['中国','理学院','教务处','大学','领导','体育部数学','中国农业银行','红十字会','北京大学生','北京实验室','试探纪实','实验室','教务处']
+li=['中国']
 
 query = Query()
 
@@ -41,12 +41,10 @@ print 'chunwei ---------------------------------------------------'
 print query.get_res('中国',1)
 '''
 
-'''
 print '-'*100
-t=Timer("find('%s')"%('严春伟'),"from __main__ import find")
+t=Timer("query.get_res('%s',1)"%('中国大学'),"from __main__ import query")
 
 print t.timeit(1)
-'''
 
 
 '''print query.get_res('中国',1)    
