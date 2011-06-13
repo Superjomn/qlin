@@ -3,13 +3,17 @@
 from django.template.loader import get_template
 from django.template import Context
 from django.http import HttpResponse
+from django.utils import simplejson 
 
 import time
 
 import Query
 
+from Intro import Intro
+
 query = Query.Res_Query()
 
+intro = Intro()
 
 
 
@@ -108,6 +112,28 @@ def search(request):
     return HttpResponse(message)
 
 
+def Intro(request):
+
+    t = get_template('intro.html')
+    res = {}
+    #print request.GET
+    if 'term' in request.GET:
+        para=request.GET['term']
+        #print para
+        ret= intro.query(para)
+    '''tell.append(para)
+    tell.append(ret)
+    json = simplejson.dumps(tell)
+    return HttpResponse(json,mimetype ='application/json')'''
+
+    #print '-'*50
+    #print 'get ret',ret
+
+    res.setdefault('res',ret)
+
+    #print res
+    html = t.render( Context( res) )
+    return HttpResponse(html)
 
 
 

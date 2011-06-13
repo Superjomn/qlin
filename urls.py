@@ -9,6 +9,7 @@ urlpatterns = patterns('',
     ('^hello/$',hello),
     ('^index/$',index),
     ('^search/$',search),
+    ('^intro/$',Intro),
     ('^templates/(?P<path>.*)$','django.views.static.serve',{'document_root':'/home/chunwei/qlin/templates/'}),
     # Examples:
     # url(r'^$', 'qlin.views.home', name='home'),

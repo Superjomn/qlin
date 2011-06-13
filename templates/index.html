@@ -3,8 +3,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
-<link type="text/css" rel="stylesheet" href="/templates/jquery/development-bundle/themes/ui-lightness/jquery.ui.all.css" />
-
+<link type="text/css" rel="stylesheet" href="/templates/jquery/development-bundle/themes/ui-lightness/jquery.ui.all.css" /> 
 <script type="text/javascript" src="/templates/jquery/development-bundle/jquery-1.5.1.js"></script>
 
 <script type="text/javascript" src="/templates/jquery/development-bundle/ui/jquery.ui.core.js">
@@ -12,6 +11,9 @@
 <script type="text/javascript" src="/templates/jquery/development-bundle/ui/jquery.ui.widget.js"></script>
 <script type="text/javascript" src="/templates/jquery/development-bundle/ui/jquery.ui.button.js"></script>
 
+<script type="text/javascript" src="/templates/jquery/development-bundle/ui/jquery.ui.autocomplete.js"></script>
+
+<script type="text/javascript" src="/templates/jquery/development-bundle/ui/jquery.ui.position.js"></script>
 
 <title>中文内网全文搜索引擎</title>
 <style>
@@ -100,7 +102,7 @@
         border:none;
         width:370px;
     }
-        
+
     form#search button{
         width: 25px;
         height:25px;
@@ -110,7 +112,33 @@
         border:none;
     }
 
-
+.ui-autocomplete{
+   font-size:16px;
+   width:100px;
+   text-align:left;
+}
+#suggest{
+    font-size:15px;
+    display:block;
+    position:absolute;
+    width:370px;
+    z-index:20;
+    background:#fff;
+    padding:0;
+}
+#suggest li{
+    display:block;
+    list-style:none;
+    text-align:left;
+    padding:0.1em;
+}
+.li{
+    background:#fff;
+}
+.sug_on{
+    background-color:blue;
+    color:#fff;
+}
 	
 </style>
 </head>
@@ -125,8 +153,8 @@
 				<li>|</li>
 				<li><a href="#">教务处</a></li>
 				<li>|</li>
-				<li><a href="#">五色土</a></li>
-				<li>|</li>
+                <li><a href="#">五色土</a></li>
+                <li>|</li>
 				<li><a href="#">公告栏</a></li>
 				<li>|</li>
 				<li><a href="#">更多...</a></li>
@@ -134,16 +162,60 @@
 			</ul>
 		</div>
 		<form id="search" action="/search/" method="get">
-			<input type="text" name="query_text" />
+			<input type="text" autocomplete="off"  disableautocomplete id='query_input' name="query_text" />
 			<button type="submit" id="search_bn"></button>
             <div class='clear'></div>
 		</form>
 	</div><!--end content-->
+    <div id = 'c'></div>
+    <ul id = 'suggest' class='suggest' style="z-index:39"></ul>
+    <script>
+        $(function(){
+            $me = $("#query_input");
+            $intro = $("#suggest");
+            var top = $("#query_input").offset().top;
+            var left = $("#query_input").offset().left;
+            $intro.css({
+                top:top+30,
+                left:left
+            });
+
+            
+            $("#query_input").bind('keypress set', null,function(){
+                $('#suggest').show();
+                $.get('/intro',{
+                    term: $("#query_input").val()
+                 },function(data){
+                     if (data.length == 10 )
+                     {
+                        $("#suggest").hide();
+                     }
+                    $("#suggest").html(data);
+                    $("#suggest").append("<div class = 'clear'></div>");
+                    $("#suggest li").hover(function(){
+                        $(this).addClass('sug_on');
+                    },function(){
+                        $(this).removeClass('sug_on');
+                    }).click(function(){
+                        $("#query_input").val( $(this).text() );
+                        $("#suggest").html('');
+                    });
+                    //alert(data);
+                    
+                });
+
+                $('#c').text( $('#query_input').val() ); 
+ 
+            });
+
+        });
+    </script>
 
 </body>
-<script type="text/javascript">
-	$(function(){
-		$('button').button();
-	});
-</script>
+
+
+
+
+
+
 </html>

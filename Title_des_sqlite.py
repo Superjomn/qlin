@@ -89,10 +89,27 @@ class Title_des_sqlite:
 
         li= self.cu.fetchone()
         if li:
-            print 'get des',li
+            print 'get des',li[0]
             return li[0]
         else:
             return ''
+
+    def get_title(self,docID):
+        '''
+        取得des
+        '''
+        self.cu.execute("select title from lib where docID = %d"%docID)
+
+        li= self.cu.fetchone()
+        if li:
+            print 'get des',li[0]
+            return li[0]
+        else:
+            return ''
+
+
+
+
 
     def add_url(self,ph):
         '''
@@ -152,6 +169,7 @@ class Title_des_sqlite:
         pagenum = len( os.listdir( 'store/document' ) )
 
         self.length = pagenum
+        '''
         
         #################################
         #
@@ -235,6 +253,7 @@ class Title_des_sqlite:
                     self.add_des( docid,des)
 
         self.cx.commit()
+    '''
 
 
     def split_des(self):
@@ -246,14 +265,51 @@ class Title_des_sqlite:
             des = self.get_des(i)
             des = self.ict.split(des)
             self.add_split_des(i,des)
+
+    
+    def intro_split_des_title(self):
+        '''
+        将title des 分词
+        且变为不重复的分词序列后 传给数据库
+        作为 intro 的参考
+        '''
+        f=open('store/sorted_url.txt')
+        lines= f.readlines()
+        f.close()
+        self.length = len(lines)
+        print 'the length is ',self.length
+        for docid in range(self.length):
+            print '-'*50
+            print docid
+            des = str(self.get_des(docid))
+            print 'des',des
+            title = str(self.get_title(docid))
+            print 'title',title
+            print self.ict.split('你好中国')
+            print 'the title>>>'
+            print des,title
+            a  = self.ict.split(des).split()
+            b  = self.ict.split(title).split()
+            c = list(set(a+b))
+            print 'c',c
+            strr = ''
+            for i in c:
+                strr += i+' '
+            #存储到数据库
+            self.add_split_des(docid,strr)
+
+
+
                 
 
 if __name__ == '__main__':
     
     doc = Title_des_sqlite()
     doc.run()
-    doc.add_url('store/sorted_url.txt')
+    #doc.add_url('store/sorted_url.txt')
     #doc.split_des()
+    doc.intro_split_des_title()
+    doc.cx.commit()
 
 
     
