@@ -169,7 +169,6 @@ class Title_des_sqlite:
         pagenum = len( os.listdir( 'store/document' ) )
 
         self.length = pagenum
-        '''
         
         #################################
         #
@@ -253,7 +252,6 @@ class Title_des_sqlite:
                     self.add_des( docid,des)
 
         self.cx.commit()
-    '''
 
 
     def split_des(self):

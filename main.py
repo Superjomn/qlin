@@ -26,17 +26,19 @@ class main:
         '''
         '''
         #分词
-        #self.url_sort()
-        #self.parser()
+        '''
+        self.url_sort()
+        self.parser()
         #修尬文件名称
-        #self.url_trans_dir()
+        self.url_trans_dir()
         #index
-        #self.p.transWbar()
+        self.p.transWbar()
 
+        '''
         #数据库处理
-        #self.title_des()
+        self.title_des()
     
-        #self.index()
+        self.index()
         #进行排序
         self.sort_hit()
 
@@ -91,7 +93,10 @@ class main:
         doc = Title_des_sqlite()
         doc.run()
         doc.add_url('store/sorted_url.txt')
-        
+        doc.split_des()
+        doc.intro_split_des_title()
+        doc.cx.commit()
+
 run = main()
 run.run()
 

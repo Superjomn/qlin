@@ -18,16 +18,13 @@ class Urltest:
     '''
     def __init__(self):
         self.home_urls=[]
-        #self.sqlite=sqlite3.connect('../../store/qlin.db')
-        #self.cs = self.sqlite.cursor( )
         self.__initHomeUrls()
     
     def __initHomeUrls(self):
         '''
         初始化 父地址列表
         '''
-        #self.home_urls=self.cs.execute('select * from home_urls').fetchall()
-        self.home_urls=['http://news.cau.edu.cn']
+        self.home_urls=['http://cab.cau.edu.cn/main']
         
     def absUrl(self,homeurl,url):
         '''
@@ -36,21 +33,25 @@ class Urltest:
         转为绝对地址
         '''
         #计算homeurl的层次 url的层次
-        #print homeurl
-        #print url
         if homeurl[-1]!='/':
             homeurl+='/'
+        
+        if url[0]=='/':
+            url=url[1:]
+
         level=[]
         length=len(homeurl)
         level2=0
+
         if homeurl.find('water///')>-1:
             return False
+
         for i in range(length):
             l=length-i#倒序
             if homeurl[l-1]=='/':
                 level.append(l)
+
         for i in range(5):
-            #print url[level2*3 : (level2+1)*3]
             if url[level2*3 : (level2+1)*3]=='../':
                 level2+=1
             else:
@@ -77,7 +78,6 @@ class Urltest:
         对 绝对url 的合法性判断
         如 文件类型不能为 doc exe 等
         '''
-        #print 'type_test>',url
         ri_end = self.__backFind(url,'?')
         if ri_end:
             url = url[:ri_end]
@@ -119,6 +119,8 @@ class Urltest:
         '''
         #print 'the home url',self.home_urls
         #基础格式整形
+        print 'ut> rawurl',url
+
         if (url== None)or(len(url)<3):   
             return False
         if url[0:4] == '\r\n':   
@@ -199,17 +201,15 @@ if __name__=='__main__':
         print i
         print urltest.tem_home(i)
 
-    urls=['../chunwei/qiaolin','./bbs/././chunwei.php','index.doc','http://www.cau.edu.cn','http://www.cau.edu.cn/tyjxb']
+    urls=['../chunwei/qiaolin','./bbs/././chunwei.php','index.doc','http://www.cau.edu.cn','http://www.cau.edu.cn/tyjxb','/chunwei/qlin.php']
     homeurl='http://www.cau.edu.cn/index.php?home=112121'
-    '''
+
     for url in urls:
         print url
         print 'tem home',urltest.tem_home(homeurl)
         print urltest.abs_url_trans( urltest.tem_home(homeurl), url)
         print ''
         print '----------------------------------------'
-    '''
-    print urltest.type_test('http://www.cau.edu.cn/index.php')
             
         
     

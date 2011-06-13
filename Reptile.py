@@ -120,6 +120,7 @@ class reptile(threading.Thread):
                     self.num += 1 
                     #将已经下载html的url进行存储
                     docname=self.getName()+str(self.num) 
+                    print 'docname',docname
                     
                     
                     #将链接进行存储e
@@ -164,8 +165,10 @@ class reptile(threading.Thread):
             else:
                 return False
 
-            print 'tem_home>',tem_home 
+            #print 'tem_home>',tem_home 
+            print 'begin abs_url_trans'
             newurl=self.urltest.abs_url_trans(tem_home, url)
+            print 'newurl'+'-'*50
             print 'get new>',newurl
 
             if newurl and self.list.find(newurl) == False:
@@ -238,7 +241,7 @@ class Reptile_run:
         '''
         运行主程序
         '''
-        startpage= 'http://news.cau.edu.cn/'
+        startpage= 'http://cab.cau.edu.cn/main/'
         
         for i in range(self.thread_num):  
 
@@ -253,7 +256,7 @@ class Reptile_run:
         
 
 if __name__=='__main__':
-    rep=Reptile_run(20,2000)
+    rep=Reptile_run(1,2000)
     rep.run()
     
         
