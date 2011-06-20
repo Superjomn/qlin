@@ -2,6 +2,8 @@ from libc.stdio cimport fopen,fclose,fwrite,FILE,fread
 
 from libc.stdlib cimport malloc,free
 
+from query.path import path
+
 DEF STEP=20
 
 cdef struct HI: 
@@ -22,16 +24,22 @@ cdef class init_hashIndex:
     #define the hash index 
 
     cdef HI hi[STEP]
+
     cdef:
         #hash的左边界
         double left
         #hash的右边界
         double right
 
+    #路径管理
+    cdef object path
+
     def __cinit__(self,char *ph,char *wide_ph):
         '''
         init
         '''
+        #路径管理类  默认为1
+        self.path = path(1)
         #取得hash边界
         self.get_wide(wide_ph)
 
@@ -52,6 +60,7 @@ cdef class init_hashIndex:
             print self.hi[i].right
             print '-'*50
 
+
     cdef void get_wide(self,char *ph):
 
         '''
@@ -63,6 +72,7 @@ cdef class init_hashIndex:
         f.close()
         self.left = float(c.split()[0])
         self.right = float(c.split()[1])
+
 
     def pos(self,long hashvalue):
 
@@ -89,6 +99,8 @@ cdef struct HI: #hashIndex 结构
     int right   #右侧范围
     
 
+
+
 cdef class Init_thesaurus:
 
     '''
@@ -105,6 +117,9 @@ cdef class Init_thesaurus:
     #words
     cdef object words
 
+    #路径管理
+    cdef object path
+
     def __cinit__(self,char *ph):
 
         '''
@@ -112,11 +127,15 @@ cdef class Init_thesaurus:
         初始化词库
         '''
 
-        print '+ get into the Init_Thes'
+        #print '+ get into the Init_Thes'
+
+        #路径管理
+        self.path = path(1)
 
         #一级hash 参考表 初始化
-        self.hashIndex = init_hashIndex("store/index_hash.b","store/word_wide.txt")
+        #self.hashIndex = init_hashIndex("store/index_hash.b","store/word_wide.txt")
 
+        self.hashIndex = init_hashIndex(self.path.g_hash_index(),self.path.g_word_wide())
         cdef:
             int i
             int l

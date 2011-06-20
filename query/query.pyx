@@ -10,6 +10,9 @@
 #
 ##################################################
 
+#########################
+#修改 先修改目录    持续进行测试
+
 from parser.Init_Thes import Init_thesaurus , init_hashIndex
 
 from libc.stdlib cimport realloc,malloc,free
@@ -17,6 +20,8 @@ from libc.stdlib cimport realloc,malloc,free
 from libc.stdio cimport fopen, fwrite, fread,fclose,FILE 
 
 from ICTCLAS50.Ictclas import Ictclas
+
+from path import path
 
 import chardet as cdt
 
@@ -115,6 +120,7 @@ DEF Page_each = 8
 
 # init_hashIndex
 DEF Hash_index = 'store/index_hash.b'
+
 DEF Hash_word_wide = 'store/word_wide.txt'
 # init_Thes
 DEF Wordbar = 'store/wordBar'
@@ -272,6 +278,11 @@ cdef class Query:
 
     cdef:
         int wid
+
+        #site id 
+        int site
+        #路径管理
+        object path
     
     def __cinit__(self):
         '''
@@ -280,6 +291,9 @@ cdef class Query:
         ##########################################
         #wlist 初始化
         #))print 'wlist 初始化'
+        #site id 默认只在小站内部署
+        #默认为1
+        self.path = path(1)
 
         self.wlist.whit = <Whit *>malloc(Whit_init_num * sizeof(Whit) )
         self.plist.whit = <Whit *>malloc(20 * sizeof(Whit))
@@ -297,9 +311,13 @@ cdef class Query:
             print '初始化时候 hlist 为空'
 
         #hlist 初始化
-        self.hashIndex = init_hashIndex(Hash_index,Hash_word_wide)
+        #self.hashIndex = init_hashIndex(Hash_index,Hash_word_wide)
+        self.hashIndex = init_hashIndex(self.path.g_hash_index(),self.path.g_word_wide())
+
+
         #初始化 width
-        f=open( Width_ph)
+        #f=open( Width_ph)
+        f=open(self.path.g_hit_size())
         c=f.read()
         f.close()
 
@@ -331,7 +349,8 @@ cdef class Query:
         self.ict=Ictclas('ICTCLAS50/') 
 
         #词库
-        self.thes=Init_thesaurus('store/wordBar')
+        print self.path.g_wordbar()
+        self.thes=Init_thesaurus(self.path.g_wordbar())
 
         #排序
         self.ranksort = RankSorter()
@@ -377,7 +396,8 @@ cdef class Query:
         #self.hlist.hit = <Hit *> malloc(sizeof(Hit) * self.hlist.width[index] )
         #**print 'self.list is right'
 
-        fname = 'store/hits/' + ind + '.hit'
+        fname = self.path.g_hit(index)
+        #fname = 'store/hits/' + ind + '.hit'
         
         fn = fname
 
