@@ -33,7 +33,7 @@ class reptile(threading.Thread):
     #raw_url    : 存储每次下载页面中的未经过处理的url 
     #inque      : queue的继承 运行时绝对url参考  
     
-    def __init__(self, Name, runtime_queue, list, per_max_num ,Flcok):  
+    def __init__(self, Name, runtime_queue, list, per_max_num ,Flcok,home_urls):  
 
         threading.Thread.__init__(self, name = Name )  
         self.runtime_queue = runtime_queue  
@@ -43,20 +43,14 @@ class reptile(threading.Thread):
         self.list=list
         self.Flcok=Flcok
         #self.sqlite=sqlite3.connect('store/qlin.db')
-        
-        self.urltest=Urltest()
+         
+        self.urltest=Urltest(home_urls)
         self.htmlparser=Collector()
-        self.collector=collector()
+        self.collector=collector(home_urls)
         #初始化home_list
-        self.home_urls=[]
+        self.home_urls=home_urls
         self.inqueue = Queue()
     
-    def init_home_urls(self):
-        '''
-        得到父地址 作为接口可以被重载
-        '''
-        #self.home_urls=self.sqlite.execute('select * from home_urls')
-        self.home_url="http://news.cau.edu.cn"
     
     def add_runtime_urls(self,docname,url):
         self.Flcok.acquire()  
@@ -148,6 +142,7 @@ class reptile(threading.Thread):
                 break'''
 
                 return True
+
         
     def trans_d(self,tem_home,rawurls):
         '''
@@ -190,15 +185,15 @@ class reptile(threading.Thread):
         content=self.htmlparser.get_content()
         
         f=open('store/document/'+self.name+str(self.num),'w')
-
+        '''
         try:
             f.write(self.collector.xml(tem_home).toxml())
         except:
             print 'write the data wrong'
             pass
-    
-        print 'begain to save content in file'
-        #text=docname+'@chunwei@'+title+'@chunwei@'+a[0]+'@chunwei@'+a[1]+'@chunwei@'+h1+'@chunwei@'+h2+'@chunwei@'+h3+'@chunwei@'+b+'@chunwei@'+content
+        '''
+        f.write(self.collector.xml(tem_home).toxml())
+
 
 
     def __backFind(self,home,s):
@@ -242,10 +237,12 @@ class Reptile_run:
         运行主程序
         '''
         startpage= 'http://cab.cau.edu.cn/main/'
+        #尝试添加home_urls
+        home_urls = ['http://cab.cau.edu.cn/main']
         
         for i in range(self.thread_num):  
-
-            th = reptile('s' + str(i), self.runtime_queue,self.list,self.per_max_num ,self.Flock)
+            #此处前缀也需要变化
+            th = reptile('s' + str(i), self.runtime_queue,self.list,self.per_max_num ,self.Flock,home_urls)
             self.thlist.append(th)  
             
         for i in self.thlist:  

@@ -18,6 +18,16 @@ class collector():
     '''
     从html中提取相关tag内容
     '''
+    def __init__(self,home_urls):
+        '''
+        也需要传入home_urls
+        对相关链接进行处理
+        '''
+        self.str_test= re.compile("(\w|&|'|=)") 
+        self.html = ''
+        self.d = ''
+        self.urltest=urltest.Urltest(home_urls)
+        self.collector=parser.HtmlParser.Collector()
 
     def init(self,html):
         
@@ -29,12 +39,8 @@ class collector():
         self.d=pq(html)
         self.d('script').remove()
         self.d('style').remove()
-        
-        self.urltest=urltest.Urltest()
-        self.collector=parser.HtmlParser.Collector()
         self.collector.init(html)
 
-        self.str_test= re.compile("(\w|&|'|=)") 
                
 
     def stest(self,text):
@@ -78,7 +84,7 @@ class collector():
         
         title=self.dd.createElement('title')
         html.appendChild(title)
-        title.setAttribute('text',self.stest(titleText))
+        title.setAttribute('text',self.str_test.sub('',titleText))
 
         #生成b
         bb=self.collector.get_node('b')

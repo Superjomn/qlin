@@ -16,15 +16,16 @@ class Urltest:
     如 是否为父地址的子页面
     转化为绝对地址等
     '''
-    def __init__(self):
-        self.home_urls=[]
-        self.__initHomeUrls()
+    def __init__(self,home_urls):
+        self.home_urls=home_urls
+        print 'the homeurl',self.home_urls
+        #self.__initHomeUrls()
     
     def __initHomeUrls(self):
         '''
         初始化 父地址列表
         '''
-        self.home_urls=['http://cab.cau.edu.cn/main']
+        #self.home_urls=['http://cab.cau.edu.cn/main']
         
     def absUrl(self,homeurl,url):
         '''
