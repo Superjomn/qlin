@@ -11,7 +11,7 @@ from timeit import Timer
 #li=['中国','理学院','教务处','大学','领导','体育部数学','中国农业银行','红十字会','北京大学生','北京实验室','试探纪实','实验室','教务处']
 li=['中国']
 
-query = Query()
+query = Query(1)
 
 #query.find_words('中国农业大学')
 #print query.get_res('严春伟',1)

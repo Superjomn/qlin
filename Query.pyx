@@ -2,6 +2,8 @@ from query.query import Query
 
 import sqlite3 as sq
 
+from query.path import path
+
 #前后命中的scope
 DEF Scope = 30
 
@@ -9,8 +11,8 @@ DEF Scope = 30
 cdef class Res_Query:
     
     '''
-前台连接主程序
-'''
+    前台连接主程序
+    '''
     cdef:
         object query
         object cx
@@ -18,15 +20,22 @@ cdef class Res_Query:
         object res
         object ict
         object words
+        #路径管理
+        object path
 
-    def __cinit__(self):
+    def __cinit__(self,int site):
         
         '''
-init
-'''
-        self.query = Query('store/hits','store/hits/hit_size.txt')
+        init
+        '''
+        #self.query = Query('store/hits','store/hits/hit_size.txt')
+        #路径管理
+        self.path = path(site)
+        #sself.query = Query(site,self.path.g_hits() , self.path.g_hit_size())
+        print 'get query',site
+        self.query = Query(site)
 
-        self.cx = sq.connect('store/chun.sqlite')
+        self.cx = sq.connect(self.path.g_chun_sqlite() )
 
         self.cu = self.cx.cursor()
 
@@ -35,14 +44,13 @@ init
     cdef object find(self,char *strr,int page_id):
         
         '''
-查找主程序
-'''
+        查找主程序
+        '''
 
         return self.query.get_res(strr,page_id)
 
 
     def gres(self,char *strr,int page_id):
-        ###print 'get page_id',page_id
 
         #print 'search for',strr
         self.res = {}

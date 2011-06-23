@@ -6,16 +6,23 @@ cdef class path:
 
     cdef:
         char *site
+        object iiid
 
     def __cinit__(self,int iid):
         '''
         init
         '''
-        cdef:
-            object iiid
+        self.iiid = 'store/sites/'+str(iid)+'/'
+        self.site = self.iiid
+        print 'in init self.site',self.site
 
-        iiid = 'store/sites/'+str(iid)+'/'
-        self.site = iiid
+
+    def g_chun_sqlite(self):
+        '''
+        内容数据库
+        chun.sqlite
+        '''
+        return self.site + 'chun.sqlite'
 
 
     def g_hash_index(self):
@@ -34,13 +41,22 @@ cdef class path:
         '''
         wordBar
         '''
+        print 'self.site:',self.site
         return self.site + 'wordBar'
 
     def g_hit_size(self):
         '''
         hit_size
         '''
-        return self.site + 'hit_size.txt'
+        return self.site + 'hits/hit_size.txt'
+
+
+    def g_hits(self):
+        '''
+        store/hits
+        '''
+        return self.site + 'hits'
+
 
     def g_hit(self,id):
         '''

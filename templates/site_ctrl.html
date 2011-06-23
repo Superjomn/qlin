@@ -1,0 +1,53 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>站点管理</title>
+<style>
+	#content{
+		border:2px solid blue;
+		width:600px;
+		font-size:18px;
+		padding:10px;
+		}
+	#content  input,#content textarea{
+		width:27em;
+		font-size:17px;
+        text-align:left;
+		}
+	#content table{
+		border:1px solid #ccc;
+		margin-top:10px;
+		margin-bottom:10px;
+		}
+		
+</style>
+</head>
+
+<body>
+	<div id="content">
+		<button type="button" id="add_site">添加站点</button>
+        {%for i in res%}
+		<form id="{{i.0}}" action="/site/">
+			<table>
+				<tr>
+				<td>名称</td><td>
+            <input type="hidden" name="id" value="{{i.0}}"/>
+			<input type="text" name="title" value="{{i.1}}" /></td></tr>
+				<tr><td>前缀</td><td>
+			<input type="text" name="head" value="{{i.2}}" /></td></tr>
+				<tr><td>起始url</td><td>
+			<input type="text" name="start_url" value="{{i.3}}" /></td></tr>
+				<tr><td>有效url</td><td>
+			<textarea name="home_urls">{{i.3}}</textarea></td></tr>
+			<tr><td></td><td><button type="button" >确认更改</button>
+							&nbsp;&nbsp;&nbsp;
+							<button type="button">删除站点</button>
+			</td></tr>
+			</table>
+		</form>
+        {%endfor%}
+		
+	</div>
+</body>
+</html>

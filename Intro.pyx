@@ -5,6 +5,8 @@ sys.setdefaultencoding('utf-8')
 
 from query.intro import Query
 
+from query.path import path
+
 import sqlite3 as sq
 
 cdef class Intro:
@@ -14,14 +16,19 @@ cdef class Intro:
     cdef object q
     cdef object cu
     cdef object cx
+    #路径管理
+    cdef object path
 
-    def __cinit__(self):
+    def __cinit__(self,int site):
         '''
         init
         '''
-        self.q= Query()
+        #路径管理
+        self.path = path(site)
 
-        self.cx = sq.connect('store/chun.sqlite')
+        self.q= Query(site)
+
+        self.cx = sq.connect(self.path.g_chun_sqlite())
 
         self.cu = self.cx.cursor()
 
@@ -53,8 +60,6 @@ cdef class Intro:
 
         return intros
         
-
-
     def get_des_title(self,docID):
         '''
         取得des

@@ -15,7 +15,7 @@
 
 <script type="text/javascript" src="/templates/jquery/development-bundle/ui/jquery.ui.position.js"></script>
 
-<title>中文内网全文搜索引擎</title>
+<title>{{title}}－中文内网全文搜索引擎</title>
 <style>
 	*{
 		padding:0;
@@ -149,9 +149,9 @@
 		<div id="logo"> 内网搜索 </div>
 		<div id="header">
 			<ul>
-				<li><a href="#">新闻网</a></li>
+				<li><a href="/index/?site=1">新闻网</a></li>
 				<li>|</li>
-				<li><a href="#">教务处</a></li>
+				<li><a href="/index/?site=2">教务处</a></li>
 				<li>|</li>
                 <li><a href="#">五色土</a></li>
                 <li>|</li>
@@ -162,12 +162,12 @@
 			</ul>
 		</div>
 		<form id="search" action="/search/" method="get">
+            <input name='site' type="hidden" value="{{site}}"/>
 			<input type="text" autocomplete="off"  disableautocomplete id='query_input' name="query_text" />
 			<button type="submit" id="search_bn"></button>
             <div class='clear'></div>
 		</form>
 	</div><!--end content-->
-    <div id = 'c'></div>
     <ul id = 'suggest' class='suggest' style="z-index:39"></ul>
     <script>
         $(function(){
@@ -204,7 +204,6 @@
                     
                 });
 
-                $('#c').text( $('#query_input').val() ); 
  
             });
 

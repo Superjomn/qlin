@@ -2,7 +2,7 @@
 
 from parser.Init_Thes import Init_thesaurus 
 
-thes=Init_thesaurus('store/wordBar')
+thes=Init_thesaurus(1,'store/sites/1/wordBar')
 
 #thes.show()
 print '-'*50

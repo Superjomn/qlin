@@ -160,7 +160,8 @@
 
 </style>	
 	<form id="sea-form" action="/search/" method="get">
-		<input type="text" name="query_text" value="{{query_text}}" />
+        <input type="hidden" name="site" value="{{site}}"/>
+		<input type="text" name="query_text" autocomplete="off"  disableautocomplete value="{{query_text}}" />
 		<button type="submit"></button>
         <div class='clear'></div>
 	</form>

@@ -284,7 +284,7 @@ cdef class Query:
         #路径管理
         object path
     
-    def __cinit__(self):
+    def __cinit__(self,int site):
         '''
         init
         '''
@@ -293,7 +293,7 @@ cdef class Query:
         #))print 'wlist 初始化'
         #site id 默认只在小站内部署
         #默认为1
-        self.path = path(1)
+        self.path = path(site)
 
         self.wlist.whit = <Whit *>malloc(Whit_init_num * sizeof(Whit) )
         self.plist.whit = <Whit *>malloc(20 * sizeof(Whit))
@@ -350,7 +350,7 @@ cdef class Query:
 
         #词库
         print self.path.g_wordbar()
-        self.thes=Init_thesaurus(self.path.g_wordbar())
+        self.thes=Init_thesaurus(site,self.path.g_wordbar())
 
         #排序
         self.ranksort = RankSorter()

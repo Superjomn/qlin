@@ -14,7 +14,6 @@ cdef struct HI:
 #################### init_hashIndex  from  Thesaurus.pyx  #################
 
 
-
 cdef class init_hashIndex:
 
     '''
@@ -31,15 +30,10 @@ cdef class init_hashIndex:
         #hash的右边界
         double right
 
-    #路径管理
-    cdef object path
-
     def __cinit__(self,char *ph,char *wide_ph):
         '''
         init
         '''
-        #路径管理类  默认为1
-        self.path = path(1)
         #取得hash边界
         self.get_wide(wide_ph)
 
@@ -120,7 +114,7 @@ cdef class Init_thesaurus:
     #路径管理
     cdef object path
 
-    def __cinit__(self,char *ph):
+    def __cinit__(self,int site,char *ph):
 
         '''
         传入词库地址
@@ -130,7 +124,7 @@ cdef class Init_thesaurus:
         #print '+ get into the Init_Thes'
 
         #路径管理
-        self.path = path(1)
+        self.path = path(site)
 
         #一级hash 参考表 初始化
         #self.hashIndex = init_hashIndex("store/index_hash.b","store/word_wide.txt")
