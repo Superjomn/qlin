@@ -3,18 +3,24 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>站点信息</title>
+<link type="text/css" rel="stylesheet" href="/templates/child.css" />
 <style>
 	#content{
-		border:2px solid blue;
 		width:600px;
 		font-size:18px;
 		padding:10px;
 		}
 	#content table{
+        text-align:left;
+        width:100%;
 		border:2px solid #ccc;
 		margin-top:10px;
 		margin-bottom:10px;
 	}
+    #content .title{
+        width:200px;
+    }
+	
 	
 		
 </style>
@@ -22,24 +28,52 @@
 
 <body>
 	<div id="content">
+			<a href='/index/'> 
+            	<img src="/templates/image/logo.png" />
+            </a>
+						<table id="top_nav" style="text-align:left; width:100%; border:none;">
+							<tr>
+								<td>
+                                     <a href="/site_ctrl/">引擎配置</a>
+								</td>
+								<td>
+                                    <a href="/site_infor/">收录信息</a>
+								</td>
+								<td>
+                                    <a href="/infor/">使用须知</a>
+								</td>
+                                <td>
+                                    <a href="/word_ctrl/">词库管理</a>
+                                </td>
+							</tr>
+						</table>	
+	
+	
+        {%for i in res%}
 		<table>
 			<tr>
-				<td>名称</td>	<td>中国农业大学</td>
+				<td class='title'>名称</td><td>{{i.1}}</td>
 			</tr>
 			<tr>
-				<td>起始url</td>
-				<td><a href="#">http://www.cau.edu.cn</a></td>
+				<td class='title'>起始url</td>
+				<td><a href="{{i.4}}">{{i.4}}</a></td>
 			</tr>
 			<tr>
-				<td>有效url</td>
-				<td>http://www.cau.edu.cn</td>
+				<td class='title'>有效url</td>
+				<td>{{i.3}}</td>
 			</tr>
 			<tr>
-				<td>收录页面</td>
-				<td>2323</td>
+				<td class='title'>最大收录页面</td>
+				<td>{{i.5}}</td>
 			</tr>
+            <tr>
+                <td class='title'>实际收录</td>
+                <td>{{i.6}}</td>
+            </tr>
 		</table>
+       {%endfor%} 
 		
 	</div>
+	<div id="footer"></div>
 </body>
 </html>

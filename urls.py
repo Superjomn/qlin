@@ -10,9 +10,17 @@ urlpatterns = patterns('',
     ('^index/$',index),
     ('^search/$',search),
     ('^intro/$',page_intro),
+
+    #site_ctrl
     ('^site_ctrl/$',Site_ctrl),
     ('^site_infor/$',Site_infor),
+    ('^update_site/$',update_site),
+    ('^add_site/$',add_site),
+    ('^del_site/$',delete_site),
+    #-----------------------------------------------------------
+    #word_ctrl
     ('^word_ctrl/$',Word_ctrl),
+    ('^update_word/$',update_word),
     #('^cg_site/$',cg_site),
     ('^templates/(?P<path>.*)$','django.views.static.serve',{'document_root':'/home/chunwei/qlin/templates/'}),
     # Examples:

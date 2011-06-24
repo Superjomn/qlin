@@ -97,6 +97,36 @@ def add_site(request):
     '''
     添加站点
     '''
+    #site = (request.GET['title'],request.GET['start_url'],request.GET['home_urls'],request.GET['head'],request.GET['max_page_num'])
+    infor.add_site(site)
+    t = get_template('jump.html')
+    html = t.render(Context({'url':'/site_ctrl/'}))
+    return HttpResponse(html)
+
+def update_site(request):
+    '''
+    更新一个站点信息
+    '''
+    site = (request.GET['title'],request.GET['start_url'],request.GET['home_urls'],request.GET['head'],int(request.GET['max_page_num']), int(request.GET['id'] ))
+    infor.update_site(site)
+
+    t = get_template('jump.html')
+    html = t.render(Context({'url':'/site_ctrl/'}))
+    return HttpResponse(html)
+
+
+def delete_site(request):
+    '''
+    删除一个站点
+    '''
+    print 'delete site'
+    infor.delete_site( int(request.GET['id']) )
+
+    t = get_template('jump.html')
+    html = t.render(Context({'url':'/site_ctrl/'}))
+    return HttpResponse(html)
+    
+    
 
 ##################################################################
 
@@ -105,7 +135,8 @@ def Site_infor(request):
     站点信息展示前台
     '''
     t = get_template('site_infor.html')
-    html = t.render(Context({}))
+    res = infor.get_sites()
+    html = t.render(Context({'res':res}))
     return HttpResponse(html)
 
 
@@ -113,8 +144,28 @@ def Word_ctrl(request):
     '''
     词库管理前台
     '''
+    words = infor.get_word()
+    for i,w in enumerate(words):
+        words[i]=w[0]
+    print words
     t = get_template('word_ctrl.html')
-    html = t.render(Context({}))
+    html = t.render(Context({'words':words}))
+    return HttpResponse(html)
+
+
+def update_word(request):
+    '''
+    对词库进行修改
+    '''
+    print 'wordbar'
+    words=((request.POST['xueyuan'],1),(request.POST['name'],2),\
+            (request.POST['pos'],3),(request.POST['other'],4))
+    print '-'*50
+    print words
+    infor.update_word(words)
+
+    t = get_template('jump.html')
+    html = t.render(Context({'url':'/word_ctrl/'}))
     return HttpResponse(html)
 
 

@@ -3,9 +3,24 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>站点管理</title>
+<link type="text/css" rel="stylesheet" href="/templates/child.css" />
+
 <style>
+	.clear{
+		clear:both;
+		height:0;
+		width:100%;
+		}
+	body{
+		background-image:url(/templates/image/bg_top.png);
+		background-position:left top;
+		background-repeat:repeat-x;
+		padding-top:20px;
+		margin:0;
+		width:100%;
+		}
 	#content{
-		border:2px solid blue;
+		margin-top:20px;
 		width:600px;
 		font-size:18px;
 		padding:10px;
@@ -20,34 +35,86 @@
 		margin-top:10px;
 		margin-bottom:10px;
 		}
-		
+	
 </style>
+
+<script type="text/javascript" src="/templates/jquery/development-bundle/jquery-1.5.1.js"></script>
+
 </head>
+
 
 <body>
 	<div id="content">
-		<button type="button" id="add_site">添加站点</button>
+			<a href='/index/'> 
+            	<img src="/templates/image/logo.png" />
+            </a>
+						<table id="top_nav" style="text-align:left; width:100%; border:none;">
+							<tr>
+								<td>
+                                     <a href="/site_ctrl/">引擎配置</a>
+								</td>
+								<td>
+                                    <a href="/site_infor/">收录信息</a>
+								</td>
+								<td>
+                                    <a href="/infor/">使用须知</a>
+								</td>
+                                <td>
+                                    <a href="/word_ctrl/">词库管理</a>
+                                </td>
+							</tr>
+						</table>
+						
+						
+        <form id='ad' action='/add_site/' method='get'>
+            <button type="submit" id="add_site">添加站点</button>
+        </form>
         {%for i in res%}
-		<form id="{{i.0}}" action="/site/">
+		<form id="{{i.0}}" action="/site_ctrl/">
 			<table>
 				<tr>
 				<td>名称</td><td>
             <input type="hidden" name="id" value="{{i.0}}"/>
 			<input type="text" name="title" value="{{i.1}}" /></td></tr>
 				<tr><td>前缀</td><td>
-			<input type="text" name="head" value="{{i.2}}" /></td></tr>
+			<input type="text" name="head" value="{{i.4}}" /></td></tr>
 				<tr><td>起始url</td><td>
-			<input type="text" name="start_url" value="{{i.3}}" /></td></tr>
+			<input type="text" name="start_url" value="{{i.2}}" /></td></tr>
+				<tr><td>收录数目</td><td>
+			<input type="text" name="max_page_num" value="{{i.5}}" /></td></tr>
 				<tr><td>有效url</td><td>
 			<textarea name="home_urls">{{i.3}}</textarea></td></tr>
-			<tr><td></td><td><button type="button" >确认更改</button>
+			<tr><td></td><td>
+                            <button class="update_site" tel="{{i.0}}" type="button" >确认更改</button>
 							&nbsp;&nbsp;&nbsp;
-							<button type="button">删除站点</button>
+							<button class="del_site" tel="{{i.0}}" type="button">删除站点</button>
+                            <button type="submit" id="{{i.0}}" style="display:none"></button>
 			</td></tr>
 			</table>
 		</form>
         {%endfor%}
 		
 	</div>
+	<div class="clear"></div>
+	<div id="footer"></div>
 </body>
+<script>
+/*对上传结果的处理*/
+$(function(){
+    //先改变form的action 之后启动上传效果
+    $("button.update_site").click(function(){
+        //修改form的action
+        tel = $(this).attr('tel');
+        $("form#"+tel).attr("action","/update_site/").trigger("submit");
+    });
+
+    $("button.del_site").click(function(){
+        //修改form的action
+        tel = $(this).attr('tel');
+        $("form#"+tel).attr("action","/del_site/").trigger("submit");
+    });
+
+   
+});
+</script>
 </html>

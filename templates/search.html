@@ -10,6 +10,9 @@
 	}
 	body{
 		font-size:16px;
+		background-image:url(/templates/image/bg_top.png);
+		background-repeat:repeat-x;
+		background-position:left top;
 		}
 	.clear{
 		clear:both;
@@ -18,17 +21,18 @@
 		}
 	
 	#logo{
-		font-size:40px;
-		color:blue;
-		font-family:"Times New Roman", Times, serif;
+		margin-top:50px;
+		font-size:30px;
 		}
-
+	img{
+		border:none;
+		}
     #logo a{
         text-decoration:none;
     }
 	
 	#res-content{
-		border:1px solid #ccc;
+		
 		width:800px;
 		margin:15px auto;
         padding:5px;
@@ -116,13 +120,16 @@
 	
 		<div id="logo">
             <a href='/index/'> 
-            Qlin
+            	<img src="/templates/image/logo.png" />
             </a>
+			<span id="site">——{{query_text}}</span>
         </div>
+		
+		<div class="clear"></div>
 
 <style>
     form#sea-form{
-        width:300px;
+        width:360px;
         padding:5px;
         font-size:17px;
         border:1px solid #ccc;
@@ -131,7 +138,7 @@
         font-size:20px;
         float:left;
         border:none;
-        width:270px;
+        width:330px;
     }
 
     button{
@@ -157,6 +164,14 @@
         float:left;
         margin-left: 10px;
     }
+	div#footer{
+		background-image:url(/templates/image/ft_bg.png);
+		background-repeat:repeat-x;
+		background-position:left top;
+		height:70px;
+		width:100%;
+		margin:0;
+		}
 
 </style>	
 	<form id="sea-form" action="/search/" method="get">
@@ -208,9 +223,18 @@
             </div> 
 		</div>
 		
+	<form id="sea-form" action="/search/" method="get">
+        <input type="hidden" name="site" value="{{site}}"/>
+		<input type="text" name="query_text" autocomplete="off"  disableautocomplete value="{{query_text}}" />
+		<button type="submit"></button>
+        <div class='clear'></div>
+	</form>
+		
 		
 	</div><!-- res-content -->
+<div id="footer">
 
+</div>
 
 </body>
 </html>

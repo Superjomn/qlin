@@ -23,20 +23,24 @@
 		}
 	body{
 		text-align:center;
-		background-color:#eee;
+		background-color:#B2BDC4;
 		font-family:"微软雅黑", "黑体";
 		}
     div#content{
-        height:470px;
+        height:520px;
         width:900px;
         background:url(/templates/image/background.jpg);
         background-repeat:no-repeat;
         background-position:center top;
-        border:1px solid #fff;
+        border:5px solid #fff;
         margin-top:50px;
         margin-left:auto;
         margin-right:auto;
     }
+	div#content table{
+		border-collapse: collapse;
+		width:100%;
+	}
 	.clear{
 		clear:both;
 		height:0;
@@ -121,7 +125,7 @@
     font-size:15px;
     display:block;
     position:absolute;
-    width:370px;
+    width: 400px;
     z-index:20;
     background:#fff;
     padding:0;
@@ -139,36 +143,88 @@
     background-color:blue;
     color:#fff;
 }
-	
+
+#footer{
+	background-color:#D0D9DD;
+	height:50px;
+	position:relative;
+	top:300px;
+	margin:0;
+	padding:0;
+}	
+#footer td{
+	padding:10px;
+	}
+#footer a{
+	color:#737373;
+	text-decoration:none;
+	font-size:18px;
+	}
+#footer a:hover{
+	text-decoration:underline;
+	}
+
 </style>
 </head>
 
 <body>
 	
 	<div id="content">
-		<div id="logo"> 内网搜索 </div>
-		<div id="header">
-			<ul>
-				<li><a href="/index/?site=1">新闻网</a></li>
-				<li>|</li>
-				<li><a href="/index/?site=2">教务处</a></li>
-				<li>|</li>
-                <li><a href="#">五色土</a></li>
-                <li>|</li>
-				<li><a href="#">公告栏</a></li>
-				<li>|</li>
-				<li><a href="#">更多...</a></li>
-				<div class="clear"></div>
-			</ul>
-		</div>
-		<form id="search" action="/search/" method="get">
-            <input name='site' type="hidden" value="{{site}}"/>
-			<input type="text" autocomplete="off"  disableautocomplete id='query_input' name="query_text" />
-			<button type="submit" id="search_bn"></button>
-            <div class='clear'></div>
-		</form>
+		<table>
+			<tr>
+				<td>
+						<div id="logo"> 内网搜索 </div>
+                        <div id="header">
+                        <ul>
+                            <li><a href="/index/?site=1">新闻网</a></li>
+                            <li>|</li>
+                            <li><a href="/index/?site=2">教务处</a></li>
+                            <li>|</li>
+                            <li><a href="#">五色土</a></li>
+                            <li>|</li>
+                            <li><a href="#">公告栏</a></li>
+                            <li>|</li>
+                            <li><a href="#">更多...</a></li>
+                            <div class="clear"></div>
+                        </ul>
+                    </div>
+                    <form id="search" action="/search/" method="get">
+                        <input name='site' type="hidden" value="{{site}}"/>
+                        <input type="text" autocomplete="off"  disableautocomplete id='query_input' name="query_text" />
+                        <button type="submit" id="search_bn"></button>
+                        <div class='clear'></div>
+                    </form>
+                </td>
+			</tr>
+
+			<tr>
+				<td style="padding:0;">
+                    <div id="footer">
+						<table style="text-align:left;">
+							<tr>
+								<td>
+                                     <a href="/site_ctrl/">引擎配置</a>
+								</td>
+								<td>
+                                    <a href="/site_infor/">收录信息</a>
+								</td>
+								<td>
+                                    <a href="/infor/">使用须知</a>
+								</td>
+                                <td>
+                                    <a href="/word_ctrl/">词库管理</a>
+                                </td>
+							</tr>
+						</table>
+                    </div><!--end footer-->
+				</td>
+			</tr>
+		</table>
 	</div><!--end content-->
     <ul id = 'suggest' class='suggest' style="z-index:39"></ul>
+
+</body>
+
     <script>
         $(function(){
             $me = $("#query_input");
@@ -209,8 +265,6 @@
 
         });
     </script>
-
-</body>
 
 
 

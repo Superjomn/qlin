@@ -3,9 +3,10 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>站点管理</title>
+<link type="text/css" rel="stylesheet" href="/templates/child.css" />
+
 <style>
 	#content{
-		border:2px solid blue;
 		width:600px;
 		font-size:18px;
 		padding:10px;
@@ -13,6 +14,9 @@
 	#content  input,#content textarea{
 		width:27em;
 		font-size:17px;
+		}
+	#content textarea{
+		height:8em;
 		}
 	#content table{
 		border:1px solid #ccc;
@@ -25,28 +29,53 @@
 
 <body>
 	<div id="content">
-		<button type="button" id="add_site">添加站点</button>
-		<form action="/site/">
+			<a href='/index/'> 
+            	<img src="/templates/image/logo.png" />
+            </a>
+						<table id="top_nav" style="text-align:left; width:100%; border:none;">
+							<tr>
+								<td>
+                                     <a href="/site_ctrl/">引擎配置</a>
+								</td>
+								<td>
+                                    <a href="/site_infor/">收录信息</a>
+								</td>
+								<td>
+                                    <a href="/infor/">使用须知</a>
+								</td>
+                                <td>
+                                    <a href="/word_ctrl/">词库管理</a>
+                                </td>
+							</tr>
+						</table>	
+	
+	
+	
+	
+		<form action="/update_word/" method="post">
 			<table>
 				<tr>
 					<td>学院</td>
-					<td><textarea name="xueyuan"></textarea></td>
+					<td><textarea name="xueyuan">{{words.0}}</textarea></td>
 				</tr>
 				<tr>
 					<td>人名</td>
-					<td><textarea name="name"></textarea>
+					<td><textarea name="name">{{words.1}}</textarea>
 				</tr>
 				<tr>
 					<td>地点</td>
-					<td><textarea name="pos"></textarea>
+					<td><textarea name="pos">{{words.2}}</textarea>
 				</tr>
 				<tr>
 					<td>其他</td>
-					<td><textarea name="other"></textarea>
+					<td><textarea name="other">{{words.3}}</textarea>
 				</td>
 			</table>
+            <button type="submit" >确认修改</button>
 		</form>
 		
 	</div>
+		<div id="footer"></div>
+
 </body>
 </html>
