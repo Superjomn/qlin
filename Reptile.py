@@ -17,6 +17,11 @@ from parser.HtmlParser import Collector
 from reptile.Urltest import Urltest
 
 from parser.collector import collector
+#导入 site从数据库中查找信息
+import Site
+
+from query.path import path 
+
 
 
 class reptile(threading.Thread):  
@@ -33,11 +38,18 @@ class reptile(threading.Thread):
     #raw_url    : 存储每次下载页面中的未经过处理的url 
     #inque      : queue的继承 运行时绝对url参考  
     
-    def __init__(self, Name, runtime_queue, list, per_max_num ,Flcok,home_urls):  
+    def __init__(self,site_id, Name, runtime_queue, list, per_max_num ,Flcok,home_urls):  
+        '''
+        site_id:
+            获得相应的目录
+        '''
 
         threading.Thread.__init__(self, name = Name )  
         self.runtime_queue = runtime_queue  
         #self.result = result  
+        #路径管理
+        self.path = path(site_id)
+
         self.num = 0          
         self.maxnum = per_max_num
         self.list=list
@@ -50,11 +62,19 @@ class reptile(threading.Thread):
         #初始化home_list
         self.home_urls=home_urls
         self.inqueue = Queue()
-    
+        
+        #开始对原始目录进行清扫
+        #建立站点
+        self.path.mk_dir( self.path.g_site() )
+        #urltest
+        self.path.rm_file( self.path.g_urltest() )
+        #晴空document
+        self.path.clean_dir( self.path.g_document() )
+
     
     def add_runtime_urls(self,docname,url):
         self.Flcok.acquire()  
-        confile = open('store/urltest.txt', 'a+')  
+        confile = open(self.path.g_urltest(), 'a+')  
         confile.write( docname+' '+url+'\n')  
         confile.close()  
         self.Flcok.release()  
@@ -184,15 +204,13 @@ class reptile(threading.Thread):
         a=self.htmlparser.get_as()
         content=self.htmlparser.get_content()
         
-        f=open('store/document/'+self.name+str(self.num),'w')
-        '''
+        f=open(self.path.g_document()+'/'+self.name+str(self.num),'w')
         try:
             f.write(self.collector.xml(tem_home).toxml())
         except:
             print 'write the data wrong'
             pass
-        '''
-        f.write(self.collector.xml(tem_home).toxml())
+        #f.write(self.collector.xml(tem_home).toxml())
 
 
 
@@ -215,46 +233,59 @@ class Reptile_run:
     爬虫运行控制程序
     主程序
     '''
-    def __init__(self,thread_num,per_max_num):
+    def __init__(self):
         '''
         thread_num    : 线程数目
         per_max_num   : 每一个线程下载的最大页面数目
         '''
-        self.thread_num=thread_num
-        self.per_max_num=per_max_num
+        self.thread_num=3
         #num=20
         #pnum=100
+        '''
         self.runtime_queue=Queue()
         self.list=Urlist()
         
         self.Flock = threading.RLock()  
         
         self.thlist = []  
+        '''
+
+        self.site = Site.Site()
     
 
-    def run(self):
+    def run(self,site_id):
         '''
         运行主程序
+        与数据库配合 载入site_id 将相关信息载入
         '''
-        startpage= 'http://cab.cau.edu.cn/main/'
+        runtime_queue = Queue() 
+        list = Urlist()
+        Flock = threading.RLock()  
+        thlist = []
+
+        site_infor = self.site.gets(site_id)
+        startpage= site_infor[2]
         #尝试添加home_urls
-        home_urls = ['http://cab.cau.edu.cn/main']
-        
+        home_urls = site_infor[3].split('\r\n')
+        head = site_infor[4]
+        per_max_num = site_infor[5]
+
         for i in range(self.thread_num):  
             #此处前缀也需要变化
-            th = reptile('s' + str(i), self.runtime_queue,self.list,self.per_max_num ,self.Flock,home_urls)
-            self.thlist.append(th)  
+            #修改  根据站点前缀命名爬虫
+            th = reptile(site_id,head + str(i), runtime_queue,list,per_max_num ,Flock,home_urls)
+            thlist.append(th)  
             
-        for i in self.thlist:  
+        for i in thlist:  
 
             i.start()  
 
-        self.runtime_queue.put(startpage)  
+        runtime_queue.put(startpage)  
         
 
 if __name__=='__main__':
-    rep=Reptile_run(1,2000)
-    rep.run()
+    rep=Reptile_run()
+    rep.run(2)
     
         
 
