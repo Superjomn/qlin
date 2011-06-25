@@ -32,6 +32,14 @@ class site_infor:
         self.cu.execute(strr)
         return  self.cu.fetchall()
 
+    def get_titles(self):
+        '''
+        取得站点title
+        '''
+        strr = 'select title from site'
+        self.cu.execute(strr)
+        return self.cu.fetchall()
+
 
 
     ###############################################################
@@ -57,6 +65,9 @@ class site_infor:
         '''
         刷新一个站点信息
         '''
+        strr = 'select title from site'
+        self.cu.execute(strr)
+        return self.cu.fetchall()
         strr = "update site set title='%s', start_url='%s',home_urls='%s',\
                 head='%s',max_page_num=%d where id =%d"%site
         print 'update a site'

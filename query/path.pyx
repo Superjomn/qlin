@@ -21,7 +21,7 @@ cdef class path:
         else:
             #当id为0时 默认为主站
             self.iiid = 'store/'
-            self.site = self.iid
+            self.site = self.iiid
 
         print 'in init self.site',self.site
     
@@ -118,9 +118,12 @@ cdef class path:
         '''
         print 'clean dir'
         if os.path.exists(pa):
-            os.rmdir(pa)
+            #需要先删除每个文件
+            for i in os.listdir(pa):
+                os.remove( os.path.join(pa,i) )
+        else:
+            os.mkdir(pa)
 
-        os.mkdir(pa)
 
 
     def mk_dir(self,char *pa):

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import os
+import shutil
 
 from query.path import path
 
@@ -20,11 +22,74 @@ class Main:
         '''
         pass
 
+
     def main(self):
         '''
-        主站
+        主站 前期处理程序
+        对于index 已经利用STEP
+        统一了划分index的快数目
+        基本思想：
+            将 所有站点信息融合到一起 最后进行处理
+        必须在 子站之前进行
         '''
-        pass
+        p = path(0)
+        
+        ###################################################################
+        #   初始化路径
+        #
+        ###################################################################
+        #清空document 为复制其余document作准备
+        p.clean_dir(p.g_document())
+
+        ###################################################################
+        #   复制document
+        #
+        ###################################################################
+        for li in os.listdir('store/sites'):
+            print li
+            site_document = os.path.join('store/sites',li,'document')
+            print site_document
+            
+            #print site_path
+            for f in os.listdir( site_document):
+                #开始将每个文件复制到document中
+                file_path = os.path.join(site_document,f)
+                shutil.copyfile( file_path,'store/document/'+f)
+                print 'successfully copy %s to document'%os.path.join(site_document,f)
+
+        ###################################################################
+        #   复制urltest
+        #
+        ###################################################################
+        #现清空urltest
+        p.rm_file( p.g_urltest() )
+        
+        u_file = open( p.g_urltest() , 'a+')
+        
+        for site_dir in os.listdir( 'store/sites/'):
+            url_ph = os.path.join('store/sites',site_dir,'urltest.txt')
+            f = open(url_ph)
+            c = f.read()
+            f.close()
+            #附加到u_file后
+            u_file.write(c)
+
+        u_file.close()
+
+        p.clean_dir(p.g_wordsplit())
+
+        #清空hits
+        p.clean_dir(p.g_hits())
+        #初始化数据库
+        p.cp_chun()
+        
+        ###################################################################
+        #   复制urltest
+        #
+        ###################################################################
+        #对总站点进行处理
+        self.run(0)
+
 
 
     def run(self,site_id):
@@ -114,7 +179,9 @@ if __name__ == '__main__':
     main = Main()
     for i in range(1,3):
         main.run(i)
-        
+
+    #main.run(1)
+    #main.main()
         
 
 

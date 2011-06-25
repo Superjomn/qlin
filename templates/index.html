@@ -173,17 +173,18 @@
 		<table>
 			<tr>
 				<td>
-						<div id="logo"> 内网搜索 </div>
+						<div id="logo"> {{title}}搜索 </div>
                         <div id="header">
-                        <ul>
-                            <li><a href="/index/?site=1">新闻网</a></li>
+                        <ul id='nav'>
+                            <li><a href="/index/?site=0">全域</a></li>
                             <li>|</li>
-                            <li><a href="/index/?site=2">教务处</a></li>
+                            {%for t in titles%}
+                            <li><a href="/index/?site={{forloop.counter}}">
+                                    {{t}}
+                                </a>
+                            </li>
                             <li>|</li>
-                            <li><a href="#">五色土</a></li>
-                            <li>|</li>
-                            <li><a href="#">公告栏</a></li>
-                            <li>|</li>
+                            {%endfor%}
                             <li><a href="#">更多...</a></li>
                             <div class="clear"></div>
                         </ul>
@@ -227,6 +228,14 @@
 
     <script>
         $(function(){
+            //将导航栏相应栏目进行高梁显示
+            var num ={{site}};
+            if (num < 5){
+                //li_num = (num-1)*2+1;
+                $("#nav a").eq(num).css({'color':'yellow',
+                                        'font-weight':'bold'});
+            }
+
             $me = $("#query_input");
             $intro = $("#suggest");
             var top = $("#query_input").offset().top;

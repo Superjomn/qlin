@@ -18,12 +18,18 @@ from site_infor import site_infor
 #
 ##################################################################
 #全局查询库
-query1 = Query.Res_Query(1)
+query0 = Query.Res_Query(0)
 #全局搜索提示库
+intro0 = Intro(0)
+
+query1= Query.Res_Query(1)
 intro1 = Intro(1)
-#初始化　默认site为0
-query2 = Query.Res_Query(2)
+
+query2= Query.Res_Query(2)
 intro2 = Intro(2)
+#初始化　默认site为0
+#query2 = Query.Res_Query(2)
+#intro2 = Intro(2)
 ########################## end ###################################
 
 #辅助 库对象
@@ -38,48 +44,48 @@ def hello(request):
     return HttpResponse(html)
 
 
-
-def cg_site(new_site):
-    '''
-    垂直搜索
-    '''
-    global query 
-    global intro
-    global site
-
-    #是否需要改变
-    if new_site != site:
-        #开始对全局quer进行赋值
-        query = Query.Res_Query(new_site)
-        intro = Intro(new_site)
-
-        site = new_site
-
-
-
 def index(request):
     '''
     首页
     '''
-    global site
-
     t = get_template('index.html')
     #加入站点信息
     if 'site' in request.GET:
         site = int( request.GET['site'])
+
+        if site == 0:
+            title = "内网"
+        else:
+            title = infor.get_title(site)
+
     else:
         #默认值应该为总搜索
-        site = 1
-    #取得title
-    title = infor.get_title(site)
+        site = 0
+        title = '全域'
     
-    html = t.render(Context({'site':site,'title':title}))
+    titles = infor.get_titles()
+    ttitle = []
+    #主页导航栏
+    if len(titles)>4:
+        titles=titles[:5]
+
+    for ti  in titles:
+        ttitle.append(ti[0])
+    
+    html = t.render(Context({'site':site,'title':title,'titles':ttitle}))
     '''
     if 'cg_site' in request.GET:
         print 'begin to change to',int( request.GET['cg_site'] )
         cg_site( int( request.GET['cg_site'] ) )
     '''
     return HttpResponse(html)
+
+
+def more_sites(request):
+    '''
+    更多站点
+    '''
+    
 
 ##################################################################
 #       站点管理
@@ -185,7 +191,7 @@ def search(request):
         if 'site' in request.GET:
             site = int( request.GET['site'] )
         else:
-            site = 1
+            site = 0
 
         if 'page' in request.GET:
             page = int(request.GET['page'])
