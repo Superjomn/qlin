@@ -18,7 +18,7 @@ class Urltest:
     '''
     def __init__(self,home_urls):
         self.home_urls=home_urls
-        print 'the homeurl',self.home_urls
+        #print 'the homeurl',self.home_urls
         #self.__initHomeUrls()
     
     def __initHomeUrls(self):
@@ -120,7 +120,7 @@ class Urltest:
         '''
         #print 'the home url',self.home_urls
         #基础格式整形
-        print 'ut> rawurl',url
+        #print 'ut> rawurl',url
 
         if (url== None)or(len(url)<3):   
             return False
@@ -199,7 +199,7 @@ if __name__=='__main__':
     li=['http://www.cau.edu.cn/index.php?id=234232','http://www.cau.edu.cn/hsz/?id=2323232',\
         'http://www.cau.edu.cn/hsz/index.php?id=23&text=2323']
     for i in li:
-        print i
+        #print i
         print urltest.tem_home(i)
 
     urls=['../chunwei/qiaolin','./bbs/././chunwei.php','index.doc','http://www.cau.edu.cn','http://www.cau.edu.cn/tyjxb','/chunwei/qlin.php']

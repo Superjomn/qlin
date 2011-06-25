@@ -1,3 +1,6 @@
+import os
+import shutil
+
 cdef class path:
 
     '''
@@ -12,9 +15,34 @@ cdef class path:
         '''
         init
         '''
-        self.iiid = 'store/sites/'+str(iid)+'/'
-        self.site = self.iiid
+        if iid >0:
+            self.iiid = 'store/sites/'+str(iid)+'/'
+            self.site = self.iiid
+        else:
+            #当id为0时 默认为主站
+            self.iiid = 'store/'
+            self.site = self.iid
+
         print 'in init self.site',self.site
+    
+    def g_site(self):
+        '''
+        取得 本站点目录
+        '''
+        return self.site
+
+    def g_document(self):
+        '''
+        document
+        '''
+        return self.site + 'document'
+
+
+    def g_wordsplit(self):
+        '''
+        wordsplit
+        '''
+        return self.site + 'wordsplit'
 
 
     def g_chun_sqlite(self):
@@ -64,6 +92,59 @@ cdef class path:
         '''
         return self.site + 'hits/'+str(id) +'.hit'
 
+    def g_urltest(self):
+        '''
+        爬虫下载url
+        '''
+        return self.site + 'urltest.txt'
+
+    def g_sorted_url(self):
+        '''
+        sorted_url
+        '''
+        return self.site + 'sorted_url.txt'
+
+
+    ###########################################################################
+    #
+    #       站点目录管理
+    #
+    ###########################################################################
+
+    def clean_dir(self,char *pa):
+        '''
+        对目录进行刷新
+        适合于文件夹 及 相关文件
+        '''
+        print 'clean dir'
+        if os.path.exists(pa):
+            os.rmdir(pa)
+
+        os.mkdir(pa)
+
+
+    def mk_dir(self,char *pa):
+        '''
+        建立目录
+        '''
+        if not os.path.exists(pa):
+            os.mkdir(pa)
+
+    def rm_file(self,char *pa):
+        '''
+        删除文件
+        '''
+        if os.path.exists(pa):
+            os.remove(pa)
+
+    def cp_chun(self):
+        '''
+        将空数据库文件进行复制
+        到指定文件夹中
+        '''
+        if not os.path.exists(self.g_chun_sqlite()):
+            shutil.copyfile('store/backup/chun.sqlite',self.g_chun_sqlite())
+    
 
 
 

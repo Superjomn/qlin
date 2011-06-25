@@ -134,13 +134,13 @@ class reptile(threading.Thread):
                     self.num += 1 
                     #将已经下载html的url进行存储
                     docname=self.getName()+str(self.num) 
-                    print 'docname',docname
+                    #print 'docname',docname
                     
                     
                     #将链接进行存储e
-                    print 'begain add_runtime_urls'
+                    #print 'begain add_runtime_urls'
                     self.add_runtime_urls(docname, url)
-                    print 'succeed add runtime_urls'
+                    #print 'succeed add runtime_urls'
                     
                 page.close()  
 
@@ -150,7 +150,7 @@ class reptile(threading.Thread):
                 print 'end error'  
 
             temHomeUrl=self.urltest.tem_home(url)
-            print 'begain trans_d'
+            #print 'begain trans_d'
             self.trans_d(temHomeUrl,raw_url)
             #将信息进行储存
             self.save_doc_content(docname,temHomeUrl)
@@ -181,20 +181,20 @@ class reptile(threading.Thread):
                 return False
 
             #print 'tem_home>',tem_home 
-            print 'begin abs_url_trans'
+            #print 'begin abs_url_trans'
             newurl=self.urltest.abs_url_trans(tem_home, url)
-            print 'newurl'+'-'*50
-            print 'get new>',newurl
+            #print 'newurl'+'-'*50
+            #print 'get new>',newurl
 
             if newurl and self.list.find(newurl) == False:
-                print 'input>',newurl
+                #print 'input>',newurl
                 self.runtime_queue.put(newurl) 
          
     def save_doc_content(self,docname,tem_home):
         '''
         将各个节点的内容存入数据库中
         '''
-        print 'begain save_doc_content'
+        #print 'begain save_doc_content'
         
         title=self.htmlparser.get_nodes('title')
         h1=self.htmlparser.get_nodes('h1')

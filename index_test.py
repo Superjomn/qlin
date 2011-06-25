@@ -1,6 +1,6 @@
 from index.indexer import Indexer
 
-index=Indexer('store/wordBar','store/wordsplit','store/hits')
+index=Indexer(1)
 
 index.run()
 

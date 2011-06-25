@@ -15,6 +15,8 @@ import os
 
 import re
 
+from query.path import path
+
 #一些常量
 Str_size = 100
 
@@ -23,11 +25,12 @@ class Title_des_sqlite:
     '''
     将 title des 整合到 sqlite 中
     '''
-    def __init__(self):
+    def __init__(self,site_id):
         
         '''
         init
         '''
+        self.path = path(site_id)
 
         #临时性设计 需要过滤无用字符
 
@@ -37,12 +40,21 @@ class Title_des_sqlite:
         self.length = 0
 
 
-        self.cx = sq.connect('store/chun.sqlite')
+        self.cx = sq.connect(self.path.g_chun_sqlite())
         self.cu = self.cx.cursor()
 
         self.ict=Ictclas.Ictclas('ICTCLAS50/') 
 
-        self.urlbar = urlbar('store/sorted_url.txt')
+        self.urlbar = urlbar(self.path.g_sorted_url())
+
+
+    def clear(self):
+        '''
+        将数据库进行清空
+        '''
+        strr = "delete from lib"
+        self.cu.execute(strr)
+        self.cx.commit()
 
 
     def stest(self,text):
@@ -64,13 +76,6 @@ class Title_des_sqlite:
 
 
     
-
-    def add_url(self,docID,url):
-        
-        '''
-        添加 url
-        '''
-        self.cu.execute("update lib set url= '%s' where docID = %d"%(url,docID))
 
 
     def add_content(self,docID,content):
@@ -108,14 +113,11 @@ class Title_des_sqlite:
             return ''
 
 
-
-
-
-    def add_url(self,ph):
+    def add_url(self):
         '''
         将url 加载进 数据库中
         '''
-        f=open(ph)
+        f=open(self.path.g_sorted_url())
         lines = f.readlines()
         f.close()
         
@@ -166,7 +168,7 @@ class Title_des_sqlite:
 
     def run(self):
         
-        pagenum = len( os.listdir( 'store/document' ) )
+        pagenum = len( os.listdir( self.path.g_document() ) )
 
         self.length = pagenum
         
@@ -178,9 +180,9 @@ class Title_des_sqlite:
 
         for i in range( pagenum ):
             
-            print 'file:', 'store/document/'+str(i)
+            print 'file:', self.path.g_document()+'/'+str(i)
             try:
-                f= open('store/document/'+str(i))
+                f= open(self.path.g_document()+'/'+str(i))
                 c=f.read()
                 f.close()
                 root = pq(c)
@@ -226,7 +228,7 @@ class Title_des_sqlite:
         for i in range( pagenum ):
 
             try:
-                f= open('store/document/'+str(i))
+                f= open(self.path.g_document()+'/'+str(i))
                 c=f.read()
                 f.close()
                 root = pq(c)
@@ -271,7 +273,7 @@ class Title_des_sqlite:
         且变为不重复的分词序列后 传给数据库
         作为 intro 的参考
         '''
-        f=open('store/sorted_url.txt')
+        f=open(self.path.g_sorted_url())
         lines= f.readlines()
         f.close()
         self.length = len(lines)
@@ -298,17 +300,14 @@ class Title_des_sqlite:
 
 
 
-                
-
 if __name__ == '__main__':
     
-    doc = Title_des_sqlite()
+    doc = Title_des_sqlite(1)
     doc.run()
-    #doc.add_url('store/sorted_url.txt')
+    #doc.add_url()
     #doc.split_des()
     doc.intro_split_des_title()
     doc.cx.commit()
-
 
     
 

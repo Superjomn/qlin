@@ -14,6 +14,8 @@ from ICTCLAS50.Ictclas import Ictclas
 import os
 import parser.Thes as Thes
 import sqlite3 as sq 
+#路径管理
+from query.path import path
 
 
 class Parser:
@@ -23,23 +25,25 @@ class Parser:
     部分功能嵌入到spider中
     
     '''
-    def __init__(self,xmlph,wsplitph,wbpath):
+    def __init__(self,site_id):
         '''
         初始化各项目录
         '''
+        self.path = path(site_id)
+
         self.ict=Ictclas('ICTCLAS50/') 
         #self.wordbar=wordlist()#wordBar
         self.spword='@chunwei@' 
         
-        self.xmlph=xmlph
-        self.wsplitph=wsplitph
-        self.wbpath=wbpath
+        self.xmlph=self.path.g_document()
+        self.wsplitph=self.path.g_wordsplit()
+        self.wbpath=self.path.g_wordbar()
 
         #初始化词库 
         self.wordbar = Thes.Create_Thesaurus(self.wbpath)
 
         #数据库相关
-        self.cx = sq.connect('store/chun.sqlite')
+        self.cx = sq.connect(self.path.g_chun_sqlite())
         self.cu = self.cx.cursor()
 
 
@@ -149,9 +153,9 @@ class Parser:
         
         print 'begin to create hash'
 
-        self.wordbar.create_hash('store/index_hash.b')
+        self.wordbar.create_hash(self.path.g_hash_index())
 
-        self.wordbar.save_wide('store/word_wide.txt')
+        self.wordbar.save_wide(self.path.g_word_wide())
 
 
     def get_split_des_words(self,docID):
@@ -176,7 +180,7 @@ class Parser:
             print i,hash(i)
 
 if __name__=='__main__':
-    p=Parser('store/document','store/wordsplit','store/wordBar')
+    p=Parser(1)
     #p.transDoc()
     #p.splitWord()
     p.transWbar()

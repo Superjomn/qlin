@@ -10,6 +10,7 @@ from ICTCLAS50.Ictclas import Ictclas
 
 import sqlite3 as sq
 
+from query.path import path
 
 
 DEF STEP=20
@@ -58,14 +59,18 @@ cdef class Hit_lists:
         List hit_list[List_num]
 
         object ict
+        #路径管理
+        object path
 
-    def __cinit__(self):
+    def __cinit__(self,int site_id):
 
         '''
         初始化数据空间
         '''
 
         print '>begin init List space'
+
+        self.path = path(site_id)
 
         self.ict = Ictclas('ICTCLAS50/')
 
@@ -183,9 +188,9 @@ cdef class Indexer:
     '''
 
     #文件目录地址
-    cdef char *fph
+    cdef object fph
 
-    cdef char *toph
+    cdef object toph
 
     cdef Hit_lists hit_list
 
@@ -200,27 +205,31 @@ cdef class Indexer:
 
     cdef object ict
 
+    cdef object path
+
     #词库
-    def __cinit__(self,char *wph,char *fph,char *toph):
+    def __cinit__(self,site_id):
 
         '''
         init
         ph: wordsplit文件目录地址
         '''
+        self.path = path(site_id) 
 
-        self.fph=fph
-        self.toph=toph
+        self.fph=self.path.g_wordsplit()
+        self.toph=self.path.g_hits()
 
         self.ict=Ictclas('ICTCLAS50/') 
         #初始化 Hit_list
-        self.hit_list = Hit_lists()
+        self.hit_list = Hit_lists(site_id)
         #词库
-        self.thes = Init_thesaurus(wph)
+        self.thes = Init_thesaurus(site_id,self.path.g_wordbar())
 
-        self.hash_index = init_hashIndex('store/index_hash.b','store/word_wide.txt')
+        #self.hash_index = init_hashIndex('store/index_hash.b','store/word_wide.txt')
 
+        self.hash_index = init_hashIndex(self.path.g_hash_index(),self.path.g_word_wide())
 
-        self.cx = sq.connect('store/chun.sqlite')
+        self.cx = sq.connect(self.path.g_chun_sqlite())
 
         self.cu = self.cx.cursor()
 
@@ -420,7 +429,8 @@ cdef class Indexer:
         fclose(fp)
 
         #保存 hit 记录数目
-        self.__save_hit_size('store/hits/hit_size.txt')
+        hit_size_ph = self.path.g_hit_size()
+        self.__save_hit_size(hit_size_ph)
 
 
 
