@@ -3,6 +3,7 @@ import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
+import os
 import threading  
 import time  
 import urllib2  
@@ -153,7 +154,11 @@ class reptile(threading.Thread):
             #print 'begain trans_d'
             self.trans_d(temHomeUrl,raw_url)
             #将信息进行储存
-            self.save_doc_content(docname,temHomeUrl)
+            try:
+                self.save_doc_content(docname,temHomeUrl)
+            except:
+                print 'encode wrong'
+                pass
             
             if self.num>self.maxnum:
 
@@ -238,7 +243,7 @@ class Reptile_run:
         thread_num    : 线程数目
         per_max_num   : 每一个线程下载的最大页面数目
         '''
-        self.thread_num=3
+        self.thread_num=20
         #num=20
         #pnum=100
         '''
@@ -258,6 +263,14 @@ class Reptile_run:
         运行主程序
         与数据库配合 载入site_id 将相关信息载入
         '''
+        #目录管理
+        p = path(site_id)
+        if os.path.exists('store/sites/'+str(site_id)):
+            p.rm_file(p.g_urltest())
+            p.clean_dir(p.g_document())
+        else:
+            os.mkdir('store/sites/'+str(site_id))
+
         runtime_queue = Queue() 
         list = Urlist()
         Flock = threading.RLock()  
@@ -285,7 +298,7 @@ class Reptile_run:
 
 if __name__=='__main__':
     rep=Reptile_run()
-    rep.run(2)
+    rep.run(1)
     
         
 

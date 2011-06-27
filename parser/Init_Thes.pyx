@@ -7,8 +7,8 @@ from query.path import path
 DEF STEP=20
 
 cdef struct HI: 
-    int left    #左侧范围
-    int right   #右侧范围
+    long left    #左侧范围
+    long right   #右侧范围
 
 
 #################### init_hashIndex  from  Thesaurus.pyx  #################
@@ -48,7 +48,7 @@ cdef class init_hashIndex:
         '''
 
         cdef:
-            int i
+            long i
         for i in range(STEP):
             print self.hi[i].left
             print self.hi[i].right
@@ -76,11 +76,11 @@ cdef class init_hashIndex:
         else return the pos
        '''
 
-        cdef int cur=-1
+        cdef long cur=-1
         
         cdef double step=<double>( (self.right-self.left)/STEP )
         
-        return <int>int((hashvalue-self.left)/step)
+        return <long>int((hashvalue-self.left)/step)
 
 
 
@@ -89,8 +89,8 @@ cdef class init_hashIndex:
 
 #定义 hashIndex 结构
 cdef struct HI: #hashIndex 结构
-    int left    #左侧范围
-    int right   #右侧范围
+    long left    #左侧范围
+    long right   #右侧范围
     
 
 
@@ -107,14 +107,14 @@ cdef class Init_thesaurus:
     #一级hash 参考表 初始化
     cdef init_hashIndex hashIndex
     #词库长度 由 delloc 调用
-    cdef int length
+    cdef long length
     #words
     cdef object words
 
     #路径管理
     cdef object path
 
-    def __cinit__(self,int site,char *ph):
+    def __cinit__(self,long site,char *ph):
 
         '''
         传入词库地址
@@ -131,8 +131,8 @@ cdef class Init_thesaurus:
 
         self.hashIndex = init_hashIndex(self.path.g_hash_index(),self.path.g_word_wide())
         cdef:
-            int i
-            int l
+            long i
+            long l
 
         f=open(ph)
         self.words=f.read().split()
@@ -178,14 +178,14 @@ cdef class Init_thesaurus:
 
         print 'begin to delete all the C spaces'
 
-        #cdef char* point
-        cdef int i=0
+        #cdef char* polong
+        cdef long i=0
 
         #释放每一个词的空间
         '''for i in range(self.length):
             free(self.word_list[i])'''
 
-        #释放整个词库 pointer 的空间
+        #释放整个词库 polonger 的空间
         #if self.word_list != NULL:
         #free(self.word_list)
 
@@ -205,7 +205,7 @@ cdef class Init_thesaurus:
         显示
         '''
         cdef:
-            int i
+            long i
 
         print 'the length is',self.length
         for i in range(self.length):
@@ -227,11 +227,11 @@ cdef class Init_thesaurus:
         #需要测试 
         #print 'want to find ',hash(data),data
         cdef:
-            int l
-            int fir
-            int mid
-            int end
-            int pos
+            long l
+            long fir
+            long mid
+            long end
+            long pos
             HI cur  #范围
 
         #print '初始化数据ok'

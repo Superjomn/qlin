@@ -10,7 +10,7 @@ from Intro import Intro
 import time
 
 
-intro = Intro()
+intro = Intro(0)
 
 time1=time.time()
 res = intro.query('中国大学')

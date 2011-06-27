@@ -177,7 +177,11 @@ class Main:
 
 if __name__ == '__main__':
     main = Main()
-    for i in range(1,3):
+    #main.main()
+    #main.run(0)
+    main.main()
+
+    for i in range(1,7):
         main.run(i)
 
     #main.run(1)

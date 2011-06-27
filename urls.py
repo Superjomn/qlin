@@ -8,6 +8,7 @@ from qlin.view import *
 urlpatterns = patterns('',
     ('^hello/$',hello),
     ('^index/$',index),
+    ('^more/$',more_sites),
     ('^search/$',search),
     ('^intro/$',page_intro),
 

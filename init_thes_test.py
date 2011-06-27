@@ -2,13 +2,13 @@
 
 from parser.Init_Thes import Init_thesaurus 
 
-thes=Init_thesaurus(1,'store/sites/1/wordBar')
+thes=Init_thesaurus(0,'store/wordBar')
 
 #thes.show()
 print '-'*50
 print 'end show() successfully!'
 
-print thes.find('理学院')
+print thes.find('大学')
 '''
 
 print 'in try to find >>>>>>>>>'

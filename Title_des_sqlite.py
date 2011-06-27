@@ -70,7 +70,7 @@ class Title_des_sqlite:
         '''
         添加 title
         '''
-        print "insert into lib values(%d,'%s','%s','%s','%s','%s')"%(docID,title,'','','','')
+        #print "insert into lib values(%d,'%s','%s','%s','%s','%s')"%(docID,title,'','','','')
 
         return self.cu.execute("insert into lib values(%d,'%s','%s','%s','%s','%s')"%(docID,title,'','','','') )
 
@@ -94,7 +94,7 @@ class Title_des_sqlite:
 
         li= self.cu.fetchone()
         if li:
-            print 'get des',li[0]
+            #print 'get des',li[0]
             return li[0]
         else:
             return ''
@@ -107,7 +107,7 @@ class Title_des_sqlite:
 
         li= self.cu.fetchone()
         if li:
-            print 'get des',li[0]
+            #print 'get des',li[0]
             return li[0]
         else:
             return ''
@@ -129,7 +129,7 @@ class Title_des_sqlite:
 
 
     def update_des(self,docID,des):
-        print 'add des',des
+        #print 'add des',des
         self.cu.execute("update lib set des = '%s' where docID = %d"%(des,docID))
 
 
@@ -142,7 +142,7 @@ class Title_des_sqlite:
         取得较长的
         '''
         fdes = self.get_des(docID)
-        print 'add des',des
+        #print 'add des',des
         if des:
             if len(des) > len(fdes):
                 self.update_des(docID,des)
@@ -180,7 +180,7 @@ class Title_des_sqlite:
 
         for i in range( pagenum ):
             
-            print 'file:', self.path.g_document()+'/'+str(i)
+            #print 'file:', self.path.g_document()+'/'+str(i)
             try:
                 f= open(self.path.g_document()+'/'+str(i))
                 c=f.read()
@@ -192,9 +192,9 @@ class Title_des_sqlite:
             title = root('title').attr('text')
             title = self.stest(title)
             
-            print 'get title:',title
+            #print 'get title:',title
             #添加 title
-            print self.add_title(i,title)
+            self.add_title(i,title)
 
 
         #################################
@@ -250,7 +250,7 @@ class Title_des_sqlite:
 
                 if docid:
                     #添加 des
-                    print 'get docid',docid,des
+                    #print 'get docid',docid,des
                     self.add_des( docid,des)
 
         self.cx.commit()
@@ -277,21 +277,21 @@ class Title_des_sqlite:
         lines= f.readlines()
         f.close()
         self.length = len(lines)
-        print 'the length is ',self.length
+        #print 'the length is ',self.length
         for docid in range(self.length):
-            print '-'*50
-            print docid
+            #print '-'*50
+            #print docid
             des = str(self.get_des(docid))
-            print 'des',des
+            #print 'des',des
             title = str(self.get_title(docid))
-            print 'title',title
-            print self.ict.split('你好中国')
-            print 'the title>>>'
-            print des,title
+            #print 'title',title
+            #print self.ict.split('你好中国')
+            #print 'the title>>>'
+            #print des,title
             a  = self.ict.split(des).split()
             b  = self.ict.split(title).split()
             c = list(set(a+b))
-            print 'c',c
+            #print 'c',c
             strr = ''
             for i in c:
                 strr += i+' '

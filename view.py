@@ -13,6 +13,7 @@ from Intro import Intro
 
 from site_infor import site_infor
 
+site = 0
 ########################### 搜索库对象 ###########################
 #
 #
@@ -21,12 +22,24 @@ from site_infor import site_infor
 query0 = Query.Res_Query(0)
 #全局搜索提示库
 intro0 = Intro(0)
-
 query1= Query.Res_Query(1)
 intro1 = Intro(1)
 
 query2= Query.Res_Query(2)
 intro2 = Intro(2)
+
+query3= Query.Res_Query(3)
+intro3 = Intro(3)
+
+
+query4= Query.Res_Query(4)
+intro4 = Intro(4)
+
+query5= Query.Res_Query(5)
+intro5 = Intro(5)
+
+query6= Query.Res_Query(6)
+intro6 = Intro(6)
 #初始化　默认site为0
 #query2 = Query.Res_Query(2)
 #intro2 = Intro(2)
@@ -35,7 +48,6 @@ intro2 = Intro(2)
 #辅助 库对象
 infor = site_infor()
 
-site = 1
 
 
 def hello(request):
@@ -67,7 +79,7 @@ def index(request):
     ttitle = []
     #主页导航栏
     if len(titles)>4:
-        titles=titles[:5]
+        titles=titles[:4]
 
     for ti  in titles:
         ttitle.append(ti[0])
@@ -85,7 +97,16 @@ def more_sites(request):
     '''
     更多站点
     '''
-    
+    t = get_template('more.html')
+    titles = infor.get_titles()
+    ttitle = []
+
+    for ti  in titles:
+        ttitle.append(ti[0])
+
+    html = t.render(Context({'titles':ttitle}))
+    return HttpResponse(html)
+
 
 ##################################################################
 #       站点管理
@@ -193,6 +214,11 @@ def search(request):
         else:
             site = 0
 
+        if site > 0:
+            title = infor.get_title(site)
+        else:
+            title = "全域"
+
         if 'page' in request.GET:
             page = int(request.GET['page'])
             ###print 'get page',page
@@ -252,6 +278,7 @@ def search(request):
             result.setdefault('res_list',[])
 
         result.setdefault('time',round(time2-time1,4))
+        result.setdefault('title',title)
         html = t.render( Context( result ) )
         return HttpResponse(html)
 
@@ -272,7 +299,7 @@ def page_intro(request):
     if 'site' in request.GET:
         site = int( request.GET['site'])
     else:
-        site = 1
+        site = 0
 
     if 'term' in request.GET:
         para=request.GET['term']

@@ -57,7 +57,7 @@ class Parser:
         docli=os.listdir(self.xmlph+'/')
         num=0
         for dp in docli:
-            print dp
+            #print dp
 
             f=open(self.xmlph+'/'+dp)
             c=f.read()
@@ -137,7 +137,7 @@ class Parser:
             for i in c.split(self.spword):
                 self.__wordFind(i)
 
-            print 'begin to find des'
+            #print 'begin to find des'
             '''for i in self.get_split_des_words(xml):
                 self.__wordFind(i)
             '''

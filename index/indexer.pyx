@@ -19,8 +19,8 @@ DEF STEP=20
 
 #定义 hashIndex 结构
 cdef struct HI: #hashIndex 结构
-    int left    #左侧范围
-    int right   #右侧范围
+    long left    #左侧范围
+    long right   #右侧范围
     
 
 DEF List_init_size = 100  #定义List初始化长度
@@ -32,18 +32,18 @@ DEF Doc_Each_Contain = 100  #每个文件中的占有的文件数目
 
 #定义 Hit 结构
 cdef struct Hit:
-    int wordID
-    int docID
+    long wordID
+    long docID
     short score
-    int pos
+    long pos
 
 
 #单个list结构
 cdef struct List:
     Hit *start
-    int length
-    int top
-    int size        #此记录中的总hit数目  初始化时需要使用
+    long length
+    long top
+    long size        #此记录中的总hit数目  初始化时需要使用
 
 
 cdef class Hit_lists:
@@ -54,15 +54,15 @@ cdef class Hit_lists:
     '''
 
     cdef:
-        int length
-        int top
+        long length
+        long top
         List hit_list[List_num]
 
         object ict
         #路径管理
         object path
 
-    def __cinit__(self,int site_id):
+    def __cinit__(self,long site_id):
 
         '''
         初始化数据空间
@@ -75,7 +75,7 @@ cdef class Hit_lists:
         self.ict = Ictclas('ICTCLAS50/')
 
         cdef:
-            int i
+            long i
 
         #初始化每个list节点
         for i in range(List_num):
@@ -96,7 +96,7 @@ cdef class Hit_lists:
         消去内存
         '''
 
-        cdef int i
+        cdef long i
 
         print 'begin to delete the space'
 
@@ -104,7 +104,7 @@ cdef class Hit_lists:
             free(self.hit_list[i].start)
 
 
-    cdef void eq(self,int hit_id,int idx,int wordID,int docID,short score,int pos):
+    cdef void eq(self,long hit_id,int idx,int wordID,int docID,short score,int pos):
 
         '''
         赋值处理
@@ -121,7 +121,7 @@ cdef class Hit_lists:
 
 
 
-    def ap(self,int hit_id , int wordID , int docID , short score , int pos):
+    def ap(self,long hit_id , int wordID , int docID , short score , int pos):
 
         '''
         向list中添加数据
@@ -133,7 +133,7 @@ cdef class Hit_lists:
         self.hit_list[hit_id].top += 1
         self.hit_list[hit_id].size += 1
 
-        print '+ hit.top+1'
+        #print '+ hit.top+1'
         #print '+ begin eq'
 
         self.eq( hit_id, self.hit_list[hit_id].top ,wordID,docID,score,pos)
@@ -152,7 +152,7 @@ cdef class Hit_lists:
             return True
 
 
-    cdef void empty(self,int hit_id):
+    cdef void empty(self,long hit_id):
 
         '''
         将List清空
@@ -234,7 +234,7 @@ cdef class Indexer:
         self.cu = self.cx.cursor()
 
 
-    cdef int loc_list(self,hashvalue):
+    cdef long loc_list(self,hashvalue):
 
         '''
         传入一个word
@@ -254,7 +254,7 @@ cdef class Indexer:
         print 'begin to save hit_size'
         
         cdef:
-            int i
+            long i
 
         strr=''
 
@@ -275,21 +275,21 @@ cdef class Indexer:
         '''
 
         cdef:
-            int list_idx    #定位 list 的号码
+            long list_idx    #定位 list 的号码
             object li
             object c
             #词库长度
-            int length
+            long length
             #相对pos
-            int abspos
+            long abspos
 
         cdef:
-            int pos
+            long pos
             #wordid 
             long wid
-            int scoid
+            long scoid
             #对应于 list 中 的 list_id
-            int docid
+            long docid
 
         li=os.listdir(self.fph)
 
@@ -322,7 +322,7 @@ cdef class Indexer:
                 for pos,word in enumerate(words):
 
                     #开始扫面每一个tag ?????????????????????
-                    print '开始在词库中查词'
+                    #print '开始在词库中查词'
 
                     wid=self.thes.find(word)
                     print 'from wordBar find',wid
@@ -334,7 +334,7 @@ cdef class Indexer:
                     if wid != 0:
                         #此处 为了将不同tag内的hit的pos完全分给开
                         #采用 自动添加 20 作为间隔
-                        if self.hit_list.ap(list_idx,wid,int(doc),scoid, abspos ) == 1:
+                        if self.hit_list.ap(list_idx,wid,long(doc),scoid, abspos ) == 1:
                             pass
                         else:
                             #将 list_idx 对应的list写入到文件
@@ -355,7 +355,7 @@ cdef class Indexer:
             #为了不影响 高亮显示 附加在最后一个
             words = self.get_split_des_words(doc)
 
-            print words
+            #print words
 
             for word in words:
                 wid = self.thes.find(word)
@@ -363,7 +363,7 @@ cdef class Indexer:
                 list_idx = self.loc_list(word)
 
                 if wid != 0:
-                    if self.hit_list.ap(list_idx,wid,int(doc),-1, abspos ) == 1:
+                    if self.hit_list.ap(list_idx,wid,long(doc),-1, abspos ) == 1:
                         pass
                     else:
                         #将 list_idx 对应的list写入到文件
@@ -383,15 +383,20 @@ cdef class Indexer:
         '''
         添加 des 的 hash
         '''
-        self.cu.execute("select des from lib where docID = %d"%int(docID))
+        try:
+            self.cu.execute("select des from lib where docID = %d"%long(docID))
 
-        li= self.cu.fetchone()
+            li= self.cu.fetchone()
 
-        if li[0]:
-            print 'get des',li[0]
-            print 'split',self.ict.split( str(li[0]) )
-            return self.ict.split( str(li[0]) ).split()
-        else:
+            if li[0]:
+                #print 'get des',li[0]
+                #print 'split',self.ict.split( str(li[0]) )
+                return self.ict.split( str(li[0]) ).split()
+            else:
+                return ['']
+        except:
+            print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            print 'get_split error'
             return ['']
 
 
@@ -406,7 +411,7 @@ cdef class Indexer:
 
 
 
-    cdef void add_save(self,int list_idx):
+    cdef void add_save(self,long list_idx):
 
         '''
         将相关内容添加到文件中 
@@ -451,12 +456,12 @@ cdef class Sorter:
     '''
 
     cdef Hit *dali
-    cdef int length
+    cdef long length
 	
-    #def __cinit__(self, Hit *data,int length):
+    #def __cinit__(self, Hit *data,long length):
 
 
-    cdef void init(self,Hit *data,int length):
+    cdef void init(self,Hit *data,long length):
 
         '''
         init 
@@ -474,9 +479,9 @@ cdef class Sorter:
         return data.wordID
 
 
-    def quicksort(self,int p,int q):
+    def quicksort(self,long p,int q):
 
-        cdef int j
+        cdef long j
 
         a=self.dali
 
@@ -505,7 +510,7 @@ cdef class Sorter:
             p=st.pop()
 
 
-    cdef int partition(self,int low,int high):
+    cdef long partition(self,int low,int high):
         cdef Hit v
         v=self.dali[low]
 
@@ -546,7 +551,7 @@ cdef class wid_sort(Sorter):
         #self.wordbar = Init_thesaurus('store/wordBar')
 
 
-    cdef void init1(self,Hit *data,int length):
+    cdef void init1(self,Hit *data,long length):
 
         '''
         初始化 父亲 Sorter
@@ -562,7 +567,7 @@ cdef class wid_sort(Sorter):
 		返回需要进行比较的值
         '''
 
-        cdef int wid=data.wordID
+        cdef long wid=data.wordID
         #返回 hit 对应 word 的 hashvalue
         #return hash( self.wordbar.wlist[wid] )
         return wid
@@ -585,7 +590,7 @@ cdef class did_sort(Sorter):
         pass
 
 
-    cdef void init1(self,Hit *data,int length):
+    cdef void init1(self,Hit *data,long length):
 
         '''
         初始化 父亲 Sorter
@@ -617,7 +622,7 @@ cdef class sco_sort(Sorter):
         pass
 
 
-    cdef void init1(self,Hit *data,int length):
+    cdef void init1(self,Hit *data,long length):
 
         '''
         初始化 父亲 Sorter
@@ -661,7 +666,7 @@ cdef class hit_sort:
         self.scoSorter = sco_sort()
 
 
-    cdef void init(self,Hit *start,int length):
+    cdef void init(self,Hit *start,long length):
         '''
         struct 端的初始化程序
         '''
@@ -671,7 +676,7 @@ cdef class hit_sort:
         self.didSorter.init1(start,length)
 
 
-    def sort_in_wid(self,int start,int end):
+    def sort_in_wid(self,long start,int end):
 
         '''
         根据wid进行排序
@@ -679,7 +684,7 @@ cdef class hit_sort:
         self.widSorter.quicksort(start,end)
 
 
-    def sort_in_did(self,int start,int end):
+    def sort_in_did(self,long start,int end):
         
         '''
         根据did进行排序
@@ -687,7 +692,7 @@ cdef class hit_sort:
         self.didSorter.quicksort(start,end)
 
 
-    def sort_in_sco(self,int start,int end):
+    def sort_in_sco(self,long start,int end):
         
         '''
         根据sco进行排序
@@ -695,7 +700,7 @@ cdef class hit_sort:
         self.scoSorter.quicksort(start,end)
 
 
-    cdef save_b(self,char *ph,int num):
+    cdef save_b(self,char *ph,long num):
 
         '''
         二进制保存文件
@@ -708,7 +713,7 @@ cdef class hit_sort:
         fclose(fp)
 
 
-    cdef int get_hit_num(docph):
+    cdef long get_hit_num(docph):
 
         '''
         返回 每个 wid文件的hit 的数量
@@ -738,9 +743,9 @@ cdef class Sort_hits:
 
     cdef Hit *hit_list
 
-    cdef int length #hitlist的长度
+    cdef long length #hitlist的长度
 
-    cdef int width[List_num]
+    cdef long width[List_num]
 
     def __cinit__(self,char *width_ph):
 
@@ -753,10 +758,10 @@ cdef class Sort_hits:
         c=f.read()
         f.close()
 
-        cdef int i=0
+        cdef long i=0
         #初始化 每个文件的 hit 数量记录
         for w in c.split():
-            self.width[i]=int(w) 
+            self.width[i]=long(w) 
             i+=1
 
         #初始化 排序库 ????????????????
@@ -764,7 +769,7 @@ cdef class Sort_hits:
         print 'init ok!'
 
 
-    def init(self,char *fdir,int index):
+    def init(self,char *fdir,long index):
 
         '''
         从 hit 文件中初始化 hit_list
@@ -774,7 +779,7 @@ cdef class Sort_hits:
         if(self.hit_list != NULL):
 
             print 'the former hits is not empty'
-            print 'free the former hit_list'
+            #print 'free the former hit_list'
             free(self.hit_list)
 
         print 're malloc'
@@ -807,12 +812,12 @@ cdef class Sort_hits:
         展示结果
         '''
         cdef:
-            int i
+            long i
         for i in range(self.length):
             print i,self.hit_list[i].wordID,self.hit_list[i].docID,self.hit_list[i].score,self.hit_list[i].pos
 
 
-    def sort_wid(self,char *fdir,int index):
+    def sort_wid(self,char *fdir,long index):
 
         '''
         在 wid 中进行排序 
@@ -840,13 +845,13 @@ cdef class Sort_hits:
         #在同一个wid内进行docid排序
         #需要确定边界
         cdef:
-            int cur_wid
-            int i = 0
-            int cur_step
-            int cur_sco_step
+            long cur_wid
+            long i = 0
+            long cur_step
+            long cur_sco_step
 
-            int j = 0
-            int cur_score
+            long j = 0
+            long cur_score
 
         #从最小的wid开始扫描排序
 
@@ -908,7 +913,7 @@ cdef class Sort_hits:
 
 
 
-    def save(self,char *ph,int index):
+    def save(self,char *ph,long index):
         
         '''
         将 hit_list进行排序

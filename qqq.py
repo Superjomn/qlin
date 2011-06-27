@@ -9,7 +9,7 @@ sys.setdefaultencoding('utf-8')
 
 import Query 
 
-qq=Query.Res_Query(2)
+qq=Query.Res_Query(0)
 
 #print qq.gres('中国农业大学',1)
 li=['教务处','体育部数学','中国农业银行','大大的猪头','开放的中国农业大学欢迎您']

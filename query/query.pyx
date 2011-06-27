@@ -45,49 +45,49 @@ DEF List_num = 20         #hit_lists中划分 块 数目
 
 #定义 Hit 结构
 cdef struct Hit:
-    int wordID
-    int docID
+    long wordID
+    long docID
     short score
-    int pos
+    long pos
 
 
 #查询时 存储队列
 #此处score未加以存储    不可以直接继承
 #直接计算其权质
 cdef struct Whit:
-    int docID
-    int pos         #可以直接比较位置
+    long docID
+    long pos         #可以直接比较位置
     float rank      #得分
 
 
 #为了方便父亲和子类间信息交流
 #定义whit_list 结构定义
 cdef struct WhitList:
-    int length
-    int top
-    int empty #无效记录的数目
-    int scan_id
+    long length
+    long top
+    long empty #无效记录的数目
+    long scan_id
     #左右范围
-    int left
-    int right
+    long left
+    long right
     #现在 wid
-    int wid
+    long wid
     Whit *whit
 
 
 #hitlist 
 cdef struct HitList:
-    int length
+    long length
     #每个文件的hit数量
-    int width[List_num]
+    long width[List_num]
     #内存中hit的id
-    int cur_id
+    long cur_id
     Hit *hit
 
 
 #最终整理过的结果整理结构
 cdef struct PackList:
-    int length
+    long length
     Whit *whit
 
 
@@ -129,7 +129,7 @@ DEF Width_ph = 'store/hits/hit_size.txt'
 
 
 
-cdef inline float sc(int score):
+cdef inline float sc(long score):
 
     '''
     计算权值
@@ -162,9 +162,9 @@ cdef class RankSorter:
 	进行排序  使用cython进行优化
     '''
     cdef Whit *dali
-    cdef int length
+    cdef long length
     
-    cdef init(self,Whit *li,int length):
+    cdef init(self,Whit *li,long length):
 
         '''
         init
@@ -185,9 +185,9 @@ cdef class RankSorter:
         
 
 
-    def quicksort(self,int p,int q):
+    def quicksort(self,long p,int q):
 
-        cdef int j
+        cdef long j
         st=[]
 
         while True:
@@ -215,7 +215,7 @@ cdef class RankSorter:
             #))print 'quicksort q p',q,p
 
 
-    cdef int partition(self,int low,int high):
+    cdef long partition(self,int low,int high):
 
         v=self.dali[low]
 
@@ -277,14 +277,14 @@ cdef class Query:
     cdef object word_id_res
 
     cdef:
-        int wid
+        long wid
 
         #site id 
-        int site
+        long site
         #路径管理
         object path
     
-    def __cinit__(self,int site):
+    def __cinit__(self,long site):
         '''
         init
         '''
@@ -322,11 +322,11 @@ cdef class Query:
         f.close()
 
         cdef:
-            int i = 0
+            long i = 0
 
         #初始化 每个文件的hit数量
         for w in c.split():
-            self.hlist.width[i] = int(w)
+            self.hlist.width[i] = long(w)
             i+=1
 
         #取得最大值
@@ -369,7 +369,7 @@ cdef class Query:
         '''
 
         #**print '314: get into init_hit_file'
-        cdef int index = self.hashIndex.pos(hashvalue)
+        cdef long index = self.hashIndex.pos(hashvalue)
         cdef char *fn
         cdef FILE *fp
 
@@ -421,9 +421,9 @@ cdef class Query:
         利用二分发确定wid的大概位置
         '''
         cdef:
-            int fir
-            int mid
-            int end
+            long fir
+            long mid
+            long end
 
         fir = 0
         mid = 0
@@ -464,8 +464,8 @@ cdef class Query:
         需要另外的wid的hash表支持
         '''
         cdef:
-            int i
-            int j
+            long i
+            long j
 
         ###print 'get into pos'
 
@@ -510,9 +510,9 @@ cdef class Query:
         cdef:
             #当前搜索的did
             #只第一个did有效
-            int cur_did
-            int i       #hit_list的index
-            int j       #whit_list的index
+            long cur_did
+            long i       #hit_list的index
+            long j       #whit_list的index
 
         #确定wid边界
         #self.pos_wid_scope()
@@ -557,11 +557,11 @@ cdef class Query:
 
         cdef:
             double hashvalue
-            int hash_file_id
+            long hash_file_id
             #特定wid的起始坐标
             #需要 wid hash表的支持
-            int widstart
-            int widend
+            long widstart
+            long widend
 
         #确定wid对应字段范围
         #此处需要确定　wid
@@ -587,9 +587,9 @@ cdef class Query:
 
         #开始遍历 对did进行处理
         cdef:
-            int i
-            int cur_did
-            int res
+            long i
+            long cur_did
+            long res
 
         i=self.wlist.left
 
@@ -652,7 +652,7 @@ cdef class Query:
         ###print 'append',hit.wordID,hit.docID
         cdef Whit *base
         cdef:
-            int i
+            long i
         
         self.wlist.top += 1
         self.wlist.whit[self.wlist.top].docID = hit.docID
@@ -687,7 +687,7 @@ cdef class Query:
         #))print 'firstly get length %d in append'%self.wlist.top
 
 
-    cdef short add(self,Hit hit,int i):
+    cdef short add(self,Hit hit,long i):
 
         '''
         将剩余词汇添加到总hit_list记录中
@@ -705,8 +705,8 @@ cdef class Query:
         ###print 'add',hit.docID
     
         cdef:
-            int j
-            int cur_did
+            long j
+            long cur_did
 
         #))print 'add 里面 的 scan_id',self.wlist.scan_id
 
@@ -796,7 +796,7 @@ cdef class Query:
         '''
         cdef:
             object words
-            int wid
+            long wid
             double hashvalue
         
         self.words = self.ict.split(para).split()
@@ -855,9 +855,9 @@ cdef class Query:
             return -1
 
         cdef:
-            int length
-            int i=0
-            int index=0
+            long length
+            long i=0
+            long index=0
 
         #结果有效长度
         length = self.wlist.top+1 - self.wlist.empty
@@ -935,7 +935,7 @@ cdef class Query:
         return self.words
 
 
-    def get_res(self,char *para,int page_id):
+    def get_res(self,char *para,long page_id):
         
         '''
         最终得到结果
@@ -948,11 +948,11 @@ cdef class Query:
         #))print 'begin to get res'
 
         cdef:
-            int page_start
-            int page_end
-            int length
+            long page_start
+            long page_end
+            long length
             object res
-            int i
+            long i
 
         #查词操作
         self.find_words(para)
