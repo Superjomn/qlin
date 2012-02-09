@@ -1,2 +1,5 @@
-test: cDemoOK.cpp ICTCLAS50.h
-	 g++ -g cDemoOK.cpp ./libICTCLAS50.so  -m32  -O3 -DOS_LINUX -o test
+all:
+	g++ ictclas.cpp -shared -o ictclas.so -I/usr/include/python2.7 -lboost_python -L. -lICTCLAS50 -m32 -DOS_LINUX
+
+clean:
+	rm ictclas.so

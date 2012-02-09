@@ -1,8 +1,0 @@
-
-from ICTCLAS50.Ictclas import Ictclas
-
-import chardet as cdt
-
-cdef object ict=Ictclas('ICTCLAS50/') 
-
-ict.split("中国农业大学")
